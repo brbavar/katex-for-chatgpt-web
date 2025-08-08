@@ -159,11 +159,11 @@ class DomInfo {
           let i = baseSpans.length - 1;
           let j = 0;
           const insertLineBreak = () => {
-            if (collectiveSpanWidth > 275 && i > j) {
+            if (collectiveSpanWidth > 274 && i > j) {
               if (
                 partialSumOfSpanWidths -
                   baseSpans[i].getBoundingClientRect().width <=
-                  265 ||
+                  264 ||
                 i - j === 1
               ) {
                 const spacer = document.createElement('div');
@@ -174,7 +174,7 @@ class DomInfo {
                   collectiveSpanWidth -
                     (partialSumOfSpanWidths -
                       baseSpans[i].getBoundingClientRect().width) >
-                  265
+                  264
                 ) {
                   partialSumOfSpanWidths =
                     collectiveSpanWidth -
