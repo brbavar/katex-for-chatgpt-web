@@ -1,11 +1,7 @@
 class DomInfo {
   #threadContainer = null;
   #messageGrid = null;
-  #parsedBubbles = [];
   #threadContainerId = 'main';
-  //   #messageGridSelector = '#thread div.@thread-xl/thread:pt-header-height';
-  // prettier-ignore NOT
-  //   #messageGridSelector = '#thread div.\\@thread-xl/thread\\:pt-header-height';
   #messageGridSelector =
     '#thread div:has(> article[data-testid^="conversation-turn"].text-token-text-primary)';
   #chatBubbleSelector =
@@ -15,7 +11,6 @@ class DomInfo {
   #threadContainerObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
-        // console.log(`node added to thread container's child list`);
         let thread = null;
         if (
           'querySelector' in node &&
@@ -69,9 +64,6 @@ class DomInfo {
       childList: true,
       subtree: true,
     });
-
-    // const label = grid.getAttribute('aria-label');
-    // this.#labelToBubbleObserver.set(label, observer);
   }
 
   handleChatBubbles(bubbleSource) {
@@ -80,8 +72,6 @@ class DomInfo {
         const chatBubbles = source.querySelectorAll(this.#chatBubbleSelector);
 
         chatBubbles.forEach((bubble) => {
-          // if (!domInfo.getParsedBubbles().includes(bubble)) {
-          // console.log('bubble still needs parsed');
           if (bubble.textContent === '') {
             const waitToParseContent = () => {
               if (
@@ -98,7 +88,6 @@ class DomInfo {
                       waitForCompleteMessage();
                     } else {
                       this.parseContent(bubble);
-                      this.ensureParsed(bubble);
                     }
                   }, 100);
                 };
@@ -108,7 +97,6 @@ class DomInfo {
             waitToParseContent();
           } else {
             this.parseContent(bubble);
-            this.ensureParsed(bubble);
           }
         });
       }
@@ -122,139 +110,99 @@ class DomInfo {
     }
   }
 
-  markAsParsed(bubble) {
-    this.#parsedBubbles.push(bubble);
-  }
-
-  unmarkAsParsed(bubble) {
-    let i = this.#parsedBubbles.indexOf(bubble);
-    if (i !== -1) {
-      this.#parsedBubbles.splice(i);
-    }
-  }
-
   parseContent(bubble) {
-    if (!this.#parsedBubbles.includes(bubble)) {
-      const msg = bubble.querySelector(this.#messageSelector);
-      let texBounds;
+    const msg = bubble.querySelector(this.#messageSelector);
+    let texBounds;
 
-      if (msg !== null && msg.textContent !== '') {
-        texBounds = getTexBounds(msg);
+    if (msg !== null && msg.textContent !== '') {
+      texBounds = getTexBounds(msg);
+    }
+
+    if (texBounds !== undefined && texBounds.length) {
+      for (let i = 0; i < texBounds.length; i++) {
+        const offset = 32 * i;
+
+        msg.textContent = `${msg.textContent.substring(
+          0,
+          texBounds[i][0] + offset
+        )}<span class='renderable'>${msg.textContent.substring(
+          texBounds[i][0] + offset,
+          texBounds[i][1] + 2 + offset
+        )}</span>${msg.textContent.substring(texBounds[i][1] + 2 + offset)}`;
       }
 
-      if (texBounds !== undefined && texBounds.length) {
-        for (let i = 0; i < texBounds.length; i++) {
-          const offset = 32 * i;
+      msg.innerHTML = msg.textContent;
 
-          msg.textContent = `${msg.textContent.substring(
-            0,
-            texBounds[i][0] + offset
-          )}<span class='renderable'>${msg.textContent.substring(
-            texBounds[i][0] + offset,
-            texBounds[i][1] + 2 + offset
-          )}</span>${msg.textContent.substring(texBounds[i][1] + 2 + offset)}`;
+      msg.querySelectorAll('span.renderable').forEach((span) => {
+        try {
+          katex.render(
+            span.textContent.substring(2, span.textContent.length - 2),
+            span,
+            {
+              displayMode: span.textContent[0] === '$',
+            }
+          );
+        } catch (error) {
+          console.error('Caught ' + error);
         }
 
-        msg.innerHTML = msg.textContent;
+        const baseSpans = span.querySelectorAll(
+          'span:where(.katex, .katex-display) span.katex-html > span.base'
+        );
+        let collectiveSpanWidth = 0;
 
-        msg.querySelectorAll('span.renderable').forEach((span) => {
-          try {
-            katex.render(
-              span.textContent.substring(2, span.textContent.length - 2),
-              span,
-              {
-                displayMode: span.textContent[0] === '$',
-              }
-            );
-          } catch (error) {
-            console.error('Caught ' + error);
-          }
+        for (let baseSpan of baseSpans) {
+          collectiveSpanWidth += baseSpan.getBoundingClientRect().width;
+        }
 
-          const baseSpans = span.querySelectorAll(
-            'span:where(.katex, .katex-display) span.katex-html > span.base'
-          );
-          let collectiveSpanWidth = 0;
-
-          for (let baseSpan of baseSpans) {
-            collectiveSpanWidth += baseSpan.getBoundingClientRect().width;
-          }
-
-          let partialSumOfSpanWidths = collectiveSpanWidth;
-          if (baseSpans.length > 0) {
-            let i = baseSpans.length - 1;
-            let j = 0;
-            const insertLineBreak = () => {
+        let partialSumOfSpanWidths = collectiveSpanWidth;
+        if (baseSpans.length > 0) {
+          let i = baseSpans.length - 1;
+          let j = 0;
+          const insertLineBreak = () => {
+            if (
+              collectiveSpanWidth >
+                baseSpans[0].parentNode.getBoundingClientRect().width &&
+              i > j
+            ) {
               if (
-                collectiveSpanWidth >
-                  baseSpans[0].parentNode.getBoundingClientRect().width &&
-                i > j
+                partialSumOfSpanWidths -
+                  baseSpans[i].getBoundingClientRect().width <=
+                  baseSpans[0].parentNode.getBoundingClientRect().width - 10 ||
+                i - j === 1
               ) {
+                const spacer = document.createElement('div');
+                spacer.style.margin = '10px 0px';
+                baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
+
                 if (
-                  partialSumOfSpanWidths -
-                    baseSpans[i].getBoundingClientRect().width <=
-                    baseSpans[0].parentNode.getBoundingClientRect().width -
-                      10 ||
-                  i - j === 1
+                  collectiveSpanWidth -
+                    (partialSumOfSpanWidths -
+                      baseSpans[i].getBoundingClientRect().width) >
+                  baseSpans[0].parentNode.getBoundingClientRect().width - 10
                 ) {
-                  const spacer = document.createElement('div');
-                  spacer.style.margin = '10px 0px';
-                  baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
-
-                  if (
+                  partialSumOfSpanWidths =
                     collectiveSpanWidth -
-                      (partialSumOfSpanWidths -
-                        baseSpans[i].getBoundingClientRect().width) >
-                    baseSpans[0].parentNode.getBoundingClientRect().width - 10
-                  ) {
-                    partialSumOfSpanWidths =
-                      collectiveSpanWidth -
-                      (partialSumOfSpanWidths -
-                        baseSpans[i].getBoundingClientRect().width);
-                    collectiveSpanWidth = partialSumOfSpanWidths;
-                    j = i;
-                    i = baseSpans.length - 1;
-
-                    insertLineBreak();
-                  }
-                } else {
-                  partialSumOfSpanWidths -=
-                    baseSpans[i--].getBoundingClientRect().width;
+                    (partialSumOfSpanWidths -
+                      baseSpans[i].getBoundingClientRect().width);
+                  collectiveSpanWidth = partialSumOfSpanWidths;
+                  j = i;
+                  i = baseSpans.length - 1;
 
                   insertLineBreak();
                 }
+              } else {
+                partialSumOfSpanWidths -=
+                  baseSpans[i--].getBoundingClientRect().width;
+
+                insertLineBreak();
               }
-            };
-            insertLineBreak();
-          }
-        });
-      }
-      this.markAsParsed(bubble);
-    } else {
-      console.log(
-        `Blocked parsing of bubble with this text: "${bubble.textContent}".\ndomInfo = ${this}`
-      );
-      console.log(
-        `domInfo.getParsedBubbles().includes(bubble) = ${this.#parsedBubbles.includes(
-          bubble
-        )}`
-      );
+            }
+          };
+          insertLineBreak();
+        }
+      });
     }
-  }
-
-  ensureParsed(bubble) {
-    setTimeout(() => {
-      const msg = bubble.querySelector(this.#messageSelector);
-      let texBounds;
-
-      if (msg !== null && msg.textContent !== '') {
-        texBounds = getTexBounds(msg);
-      }
-
-      if (texBounds !== undefined && texBounds.length) {
-        this.unmarkAsParsed(bubble);
-        this.parseContent(bubble);
-      }
-    }, 2000);
   }
 }
 
@@ -306,20 +254,13 @@ const getTexBounds = (msg) => {
 };
 
 const startUp = () => {
-  console.log(`page loaded`);
   const domInfo = new DomInfo();
 
   domInfo.setThreadContainer();
   domInfo.setMessageGrid();
   const waitToHandleChat = () => {
     if (domInfo.getMessageGrid() === null) {
-      // console.log(`still waiting for message grid...`);
       setTimeout(() => {
-        // Condition below never satisfied
-        // if (domInfo.getThreadContainer() === null) {
-        //   console.log(`still waiting for thread container...`);
-        //   domInfo.setThreadContainer();
-        // }
         domInfo.setMessageGrid();
         waitToHandleChat();
       }, 100);
