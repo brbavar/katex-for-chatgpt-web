@@ -12,11 +12,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "katex/katex.min.css",
-        "katex/fonts/*",
-        "chatgpt.katex.css"
-      ],
+      "resources": ["katex/katex.min.css", "katex/fonts/*"],
       "matches": ["<all_urls>"]
     }
   ]
