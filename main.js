@@ -8,6 +8,14 @@ class DomInfo {
     'div[data-message-author-role="user"] div.user-message-bubble-color, div[data-message-author-role="assistant"] div.markdown.prose';
   #messageSelector = 'div.whitespace-pre-wrap';
 
+  #chatBubbleObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        this.handleChatBubbles(node);
+      });
+    });
+  });
+
   #threadContainerObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
@@ -16,6 +24,7 @@ class DomInfo {
           'querySelector' in node &&
           (thread = node.querySelector(this.#messageGridSelector))
         ) {
+          this.#chatBubbleObserver.disconnect();
           this.#messageGrid = thread;
           this.handleChatBubbles();
           this.observeChatBubbles();
@@ -23,6 +32,15 @@ class DomInfo {
       });
     });
   });
+
+  #documentVisibilityListener = () => {
+    if (document.hidden) {
+      this.disconnectObservers();
+    } else {
+      this.observeThreadContainer();
+      this.observeChatBubbles();
+    }
+  };
 
   getThreadContainer() {
     return this.#threadContainer;
@@ -48,18 +66,8 @@ class DomInfo {
     );
   }
 
-  #chatBubbleMutationHandler = (mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        this.handleChatBubbles(node);
-      });
-    });
-  };
-
   observeChatBubbles() {
-    const observer = new MutationObserver(this.#chatBubbleMutationHandler);
-
-    observer.observe(this.#messageGrid, {
+    this.#chatBubbleObserver.observe(this.#messageGrid, {
       childList: true,
       subtree: true,
     });
@@ -199,6 +207,18 @@ class DomInfo {
       });
     }
   }
+
+  listenToDocumentVisibility() {
+    document.addEventListener(
+      'visibilitychange',
+      this.#documentVisibilityListener
+    );
+  }
+
+  disconnectObservers() {
+    this.#threadContainerObserver.disconnect();
+    this.#chatBubbleObserver.disconnect();
+  }
 }
 
 const getTexBounds = (msg) => {
@@ -250,6 +270,8 @@ const getTexBounds = (msg) => {
 
 const startUp = () => {
   const domInfo = new DomInfo();
+
+  domInfo.listenToDocumentVisibility();
 
   domInfo.setThreadContainer();
   domInfo.setMessageGrid();
