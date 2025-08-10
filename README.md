@@ -31,8 +31,9 @@ While composing a message at chatgpt.com, write your TeX code between `$$` and `
 
 Here are a couple examples of what the extension can do:
 <br><br>
-
+<img width="667" height="289" alt="Screenshot 2025-08-09 at 9 06 57 PM" src="https://github.com/user-attachments/assets/bfb139ca-b1a6-4c79-bf69-b841160f2dea" />
 <br><br>
+<img width="667" height="577" alt="Screenshot 2025-08-09 at 9 06 33 PM" src="https://github.com/user-attachments/assets/6a996e85-fb25-4a72-a0b5-0745c052831e" />
 
 ## Limitations
 
