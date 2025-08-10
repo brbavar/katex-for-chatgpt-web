@@ -8,5 +8,29 @@ So I made that wish come true. With this Chrome extension you can now send rende
 
 ## Installation
 
+[Click here](https://github.com/brbavar/katex-for-chatgpt-web/archive/refs/heads/main.zip) to download the ZIP. Once you've extracted the files, open Google Chrome, type `chrome://extensions` in the search bar, and press Enter. Click the button labeled "Load unpacked".
+<br><br>
+
+<br><br>
+This brings up Finder or File Explorer. Once that window opens, select the unpacked ZIP file, which should be a folder named `katex-for-chatgpt-web-main`, in order to load that entire folder into your collection of extensions.
+<br><br>
+
+<br><br>
+The extension is automatically activated and ready to go!
+<br><br>
+
+<br><br>
+
 ## Usage
 
+While composing a message at chatgpt.com, write your TeX code between `$$` and `$$` if you want to display mathematical notation centered on its own line. Enclose your code in `\( ... \)` if you want your mathematical notation on the same line as other mathematical expressions or ordinary text. The math is rendered only after you hit send (no live preview).
+
+Here are a couple examples of what the extension can do:
+<br><br>
+
+<br><br>
+
+## Limitations
+
+- You cannot render inline math by writing commands between single dollar signs (`$ ... $`). You must use the `\( ... \)` syntax.
+- The typesetting of notation in your messages is not visible to anyone you send a link to your chat. It is visible to you alone.
