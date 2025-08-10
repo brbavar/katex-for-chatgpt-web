@@ -8,17 +8,21 @@ So I made that wish come true. With this Chrome extension you can now send rende
 
 ## Installation
 
-[Click here](https://github.com/brbavar/katex-for-chatgpt-web/archive/refs/heads/main.zip) to download the ZIP. Once you've extracted the files, open Google Chrome, type `chrome://extensions` in the search bar, and press Enter. Click the button labeled "Load unpacked".
+[Click here](https://github.com/brbavar/katex-for-chatgpt-web/archive/refs/heads/main.zip) to download the ZIP. Once you've extracted the files, open Google Chrome, type `chrome://extensions` in the search bar, and press Enter. Turn on Developer Mode.
 <br><br>
-
+<img width="1051" height="337" alt="Screenshot 2025-08-09 at 8 47 27 PM" src="https://github.com/user-attachments/assets/7a0a349c-e68c-4edf-b023-c20465e5d76d" />
+<br><br>
+Click the button labeled "Load unpacked".
+<br><br>
+<img width="1051" height="337" alt="Screenshot 2025-08-09 at 8 45 22 PM" src="https://github.com/user-attachments/assets/e3ad2d1e-4640-40a9-b9a0-00a41441f7e1" />
 <br><br>
 This brings up Finder or File Explorer. Once that window opens, select the unpacked ZIP file, which should be a folder named `katex-for-chatgpt-web-main`, in order to load that entire folder into your collection of extensions.
 <br><br>
-
+<img width="712" height="445" alt="Screenshot 2025-08-09 at 8 53 58 PM" src="https://github.com/user-attachments/assets/2f00f20c-e9b0-4276-8dd3-75ce2961c19d" />
 <br><br>
 The extension is automatically activated and ready to go!
 <br><br>
-
+<img width="401" height="211" alt="Screenshot 2025-08-09 at 8 57 33 PM" src="https://github.com/user-attachments/assets/f31bb4f5-6959-41a0-9854-922ff3ee4c3e" />
 <br><br>
 
 ## Usage
