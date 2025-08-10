@@ -8,7 +8,7 @@ So I made that wish come true. With this Chrome extension you can now send rende
 
 ## Installation
 
-[Click here](https://github.com/brbavar/katex-for-chatgpt-web/archive/refs/heads/main.zip) to download the ZIP. Once you've extracted the files, open Google Chrome, type `chrome://extensions` in the search bar, and press Enter. Turn on Developer Mode.
+[Click here](https://github.com/brbavar/katex-for-chatgpt-web/archive/refs/heads/main.zip) to download the ZIP. Once you've extracted the files, open Google Chrome, type `chrome://extensions` in the search bar, and press Enter. Turn on developer mode.
 <br><br>
 <img width="1051" height="337" alt="Screenshot 2025-08-09 at 8 47 27 PM" src="https://github.com/user-attachments/assets/7a0a349c-e68c-4edf-b023-c20465e5d76d" />
 <br><br>
