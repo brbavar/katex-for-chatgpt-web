@@ -32,5 +32,6 @@ Here are a couple examples of what the extension can do:
 
 ## Limitations
 
-- You cannot render inline math by writing commands between single dollar signs (`$ ... $`). You must use the `\( ... \)` syntax.
+- You cannot render inline math by writing commands between single dollar signs (`$ ... $`). You must use the  
+  `\( ... \)` syntax.
 - The typesetting of notation in your messages is not visible to anyone you send a link to your chat. It is visible to you alone.
