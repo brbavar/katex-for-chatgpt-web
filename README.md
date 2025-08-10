@@ -1,6 +1,6 @@
 # KaTeX for ChatGPT
 
-Whenever ChatGPT and I talk math or logic with each other, and it starts sending me beautifully rendered notation, 
+Whenever GPT and I talk math or logic with each other, and GPT starts sending me beautifully rendered notation, 
 I begin to wish I could do the same—not for the sake of aesthetics so much as concisely and precisely expressing 
 concepts. So I made that wish come true. With this Chrome extension you can now send rendered mathematical formulas to GPT, courtesy of KaTeX.
 
