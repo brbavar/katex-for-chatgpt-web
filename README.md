@@ -27,7 +27,7 @@ The extension is automatically activated and ready to go!
 
 ## Usage
 
-While composing a message at chatgpt.com, write your TeX code between `$$` and `$$` if you want to display mathematical notation centered on its own line. Enclose your code in `\( ... \)` if you want your mathematical notation on the same line as other mathematical expressions or ordinary text. The math is rendered only after you hit send (no live preview).
+While composing a message at chatgpt.com, write your TeX code between `$$` and `$$`, or `\[` and `\]`, if you want to display mathematical notation centered on its own line. Enclose your code in `$ ... $` or `\( ... \)` if you want your mathematical notation on the same line as other mathematical expressions or ordinary text. The math is rendered only after you hit send (no live preview).
 
 Here are a couple examples of what the extension can do:
 <br><br>
@@ -37,5 +37,4 @@ Here are a couple examples of what the extension can do:
 
 ## Limitations
 
-- As is evident from that last screenshot, you cannot render inline math by writing characters or commands between single dollar signs (`$ ... $`). You must use the `\( ... \)` syntax.
 - The typesetting of notation in your messages is not visible to anyone you send a link to your chat. It is visible to you alone.
