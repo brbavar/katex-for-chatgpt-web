@@ -215,52 +215,6 @@ class DomInfo {
   }
 }
 
-// const getTexBounds = (msg) => {
-//   const txt = msg.textContent;
-//   const bounds = [];
-
-//   const delimAt = (i) => {
-//     return (
-//       (txt[i] === '$' && txt[i + 1] === '$') ||
-//       (txt[i] === '\\' && (txt[i + 1] === '(' || txt[i + 1] === ')'))
-//     );
-//   };
-
-//   const openingDelimAt = (l) => {
-//     return delimAt(l) && (txt[l] === '$' || txt[l + 1] === '(');
-//   };
-
-//   const closingDelimAt = (r) => {
-//     return delimAt(r) && (txt[r] === '$' || txt[r + 1] === ')');
-//   };
-
-//   let l = 0,
-//     r = 0;
-//   while (l < txt.length) {
-//     if (
-//       openingDelimAt(l) &&
-//       (bounds.length === 0 || l !== bounds[bounds.length - 1][1])
-//     ) {
-//       r = l + 2;
-
-//       while (r + 1 < txt.length && !(closingDelimAt(r) && txt[l] == txt[r])) {
-//         if (openingDelimAt(r) && txt[l] == txt[r]) {
-//           l = r;
-//           r += 2;
-//         } else {
-//           r++;
-//         }
-//       }
-
-//       if (closingDelimAt(r) && txt[l] == txt[r]) {
-//         bounds.push([l, r]);
-//       }
-//     }
-//     l++;
-//   }
-
-//   return bounds;
-// };
 const getTexBounds = (msg) => {
   const txt = msg.textContent;
   const bounds = [];
@@ -344,7 +298,6 @@ const getTexBounds = (msg) => {
 };
 
 const insertLineBreaks = (span) => {
-  console.log(`inserting line breaks`);
   const baseSpans = span.querySelectorAll(
     'span:where(.katex, .katex-display) span.katex-html > span.base'
   );
@@ -359,11 +312,6 @@ const insertLineBreaks = (span) => {
     let i = baseSpans.length - 1;
     let j = 0;
     const insertLineBreak = () => {
-      console.log(
-        `collectiveSpanWidth = ${collectiveSpanWidth}, baseSpans[0].parentNode.getBoundingClientRect().width = ${
-          baseSpans[0].parentNode.getBoundingClientRect().width
-        }`
-      );
       if (
         collectiveSpanWidth >
           baseSpans[0].parentNode.getBoundingClientRect().width &&
