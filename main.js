@@ -1,6 +1,7 @@
 class DomInfo {
   #threadContainer = null;
   #messageGrid = null;
+  #threadContainerWidth = -1;
   #threadContainerId = 'main';
   #messageGridSelector =
     '#thread div:has(> article[data-testid^="conversation-turn"].text-token-text-primary)';
@@ -16,7 +17,7 @@ class DomInfo {
     });
   });
 
-  #threadContainerObserver = new MutationObserver((mutations) => {
+  #threadContainerChildListObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         let thread = null;
@@ -33,11 +34,27 @@ class DomInfo {
     });
   });
 
+  #threadContainerWidthObserver = new ResizeObserver(() => {
+    if (
+      this.#threadContainer.getBoundingClientRect().width !==
+      this.#threadContainerWidth
+    ) {
+      this.#threadContainerWidth =
+        this.#threadContainer.getBoundingClientRect().width;
+
+      this.#messageGrid.querySelectorAll('span.renderable').forEach((span) => {
+        removeLineBreaks(span);
+        insertLineBreaks(span);
+      });
+    }
+  });
+
   #documentVisibilityListener = () => {
     if (document.hidden) {
       this.disconnectObservers();
     } else {
-      this.observeThreadContainer();
+      this.observeThreadContainerWidth();
+      this.observeThreadContainerChildList();
       this.observeChatBubbles();
     }
   };
@@ -50,10 +67,19 @@ class DomInfo {
     this.#threadContainer = document.getElementById(this.#threadContainerId);
   }
 
-  observeThreadContainer() {
-    this.#threadContainerObserver.observe(this.#threadContainer, {
+  observeThreadContainerChildList() {
+    this.#threadContainerChildListObserver.observe(this.#threadContainer, {
       childList: true,
     });
+  }
+
+  setThreadContainerWidth() {
+    this.#threadContainerWidth =
+      this.#threadContainer.getBoundingClientRect().width;
+  }
+
+  observeThreadContainerWidth() {
+    this.#threadContainerWidthObserver.observe(this.#threadContainer);
   }
 
   getMessageGrid() {
@@ -128,82 +154,49 @@ class DomInfo {
     if (texBounds !== undefined && texBounds.length) {
       for (let i = 0; i < texBounds.length; i++) {
         const offset = 32 * i;
+        const delimLen =
+          msg.textContent[texBounds[i][0] + offset] === '$' &&
+          msg.textContent[texBounds[i][0] + offset + 1] !== '$'
+            ? 1
+            : 2;
 
         msg.textContent = `${msg.textContent.substring(
           0,
           texBounds[i][0] + offset
         )}<span class='renderable'>${msg.textContent.substring(
           texBounds[i][0] + offset,
-          texBounds[i][1] + 2 + offset
-        )}</span>${msg.textContent.substring(texBounds[i][1] + 2 + offset)}`;
+          texBounds[i][1] + delimLen + offset
+        )}</span>${msg.textContent.substring(
+          texBounds[i][1] + delimLen + offset
+        )}`;
       }
 
       msg.innerHTML = msg.textContent;
 
       msg.querySelectorAll('span.renderable').forEach((span) => {
         try {
+          const hasDollarDelim = span.textContent[0] === '$';
+          const hasSingleDollarDelim =
+            hasDollarDelim && span.textContent[1] !== '$';
+          const delimLen = hasSingleDollarDelim ? 1 : 2;
+
           katex.render(
-            span.textContent.substring(2, span.textContent.length - 2),
+            span.textContent.substring(
+              delimLen,
+              span.textContent.length - delimLen
+            ),
             span,
             {
-              displayMode: span.textContent[0] === '$',
+              displayMode:
+                (hasDollarDelim && !hasSingleDollarDelim) ||
+                span.textContent[1] === '[',
             }
           );
         } catch (error) {
           console.error('Caught ' + error);
         }
 
-        const baseSpans = span.querySelectorAll(
-          'span:where(.katex, .katex-display) span.katex-html > span.base'
-        );
-        let collectiveSpanWidth = 0;
-
-        for (let baseSpan of baseSpans) {
-          collectiveSpanWidth += baseSpan.getBoundingClientRect().width;
-        }
-
-        let partialSumOfSpanWidths = collectiveSpanWidth;
-        if (baseSpans.length > 0) {
-          let i = baseSpans.length - 1;
-          let j = 0;
-          const insertLineBreak = () => {
-            if (collectiveSpanWidth > 274 && i > j) {
-              if (
-                partialSumOfSpanWidths -
-                  baseSpans[i].getBoundingClientRect().width <=
-                  264 ||
-                i - j === 1
-              ) {
-                const spacer = document.createElement('div');
-                spacer.style.margin = '10px 0px';
-                baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
-
-                if (
-                  collectiveSpanWidth -
-                    (partialSumOfSpanWidths -
-                      baseSpans[i].getBoundingClientRect().width) >
-                  264
-                ) {
-                  partialSumOfSpanWidths =
-                    collectiveSpanWidth -
-                    (partialSumOfSpanWidths -
-                      baseSpans[i].getBoundingClientRect().width);
-                  collectiveSpanWidth = partialSumOfSpanWidths;
-                  j = i;
-                  i = baseSpans.length - 1;
-
-                  insertLineBreak();
-                }
-              } else {
-                partialSumOfSpanWidths -=
-                  baseSpans[i--].getBoundingClientRect().width;
-
-                insertLineBreak();
-              }
-            }
-          };
-          insertLineBreak();
-        }
+        insertLineBreaks(span);
       });
     }
   }
@@ -216,56 +209,209 @@ class DomInfo {
   }
 
   disconnectObservers() {
-    this.#threadContainerObserver.disconnect();
+    this.#threadContainerWidthObserver.unobserve(this.#threadContainer);
+    this.#threadContainerChildListObserver.disconnect();
     this.#chatBubbleObserver.disconnect();
   }
 }
 
+// const getTexBounds = (msg) => {
+//   const txt = msg.textContent;
+//   const bounds = [];
+
+//   const delimAt = (i) => {
+//     return (
+//       (txt[i] === '$' && txt[i + 1] === '$') ||
+//       (txt[i] === '\\' && (txt[i + 1] === '(' || txt[i + 1] === ')'))
+//     );
+//   };
+
+//   const openingDelimAt = (l) => {
+//     return delimAt(l) && (txt[l] === '$' || txt[l + 1] === '(');
+//   };
+
+//   const closingDelimAt = (r) => {
+//     return delimAt(r) && (txt[r] === '$' || txt[r + 1] === ')');
+//   };
+
+//   let l = 0,
+//     r = 0;
+//   while (l < txt.length) {
+//     if (
+//       openingDelimAt(l) &&
+//       (bounds.length === 0 || l !== bounds[bounds.length - 1][1])
+//     ) {
+//       r = l + 2;
+
+//       while (r + 1 < txt.length && !(closingDelimAt(r) && txt[l] == txt[r])) {
+//         if (openingDelimAt(r) && txt[l] == txt[r]) {
+//           l = r;
+//           r += 2;
+//         } else {
+//           r++;
+//         }
+//       }
+
+//       if (closingDelimAt(r) && txt[l] == txt[r]) {
+//         bounds.push([l, r]);
+//       }
+//     }
+//     l++;
+//   }
+
+//   return bounds;
+// };
 const getTexBounds = (msg) => {
   const txt = msg.textContent;
   const bounds = [];
 
   const delimAt = (i) => {
-    return (
-      (txt[i] === '$' && txt[i + 1] === '$') ||
-      (txt[i] === '\\' && (txt[i + 1] === '(' || txt[i + 1] === ')'))
-    );
+    let delim = '';
+    if (txt[i] === '$') {
+      delim += '$';
+      if (txt[i + 1] === '$') {
+        delim += '$';
+      }
+    } else {
+      if (txt[i] === '\\') {
+        if (
+          txt[i + 1] === '(' ||
+          txt[i + 1] === ')' ||
+          txt[i + 1] === '[' ||
+          txt[i + 1] === ']'
+        ) {
+          delim = `${txt[i]}${txt[i + 1]}`;
+        }
+      }
+    }
+    return delim;
   };
 
-  const openingDelimAt = (l) => {
-    return delimAt(l) && (txt[l] === '$' || txt[l + 1] === '(');
+  const isOpeningDelim = (delim) => {
+    if (delim.length === 0) {
+      return false;
+    }
+    return delim[0] === '$' || delim[1] === '(' || delim[1] === '[';
   };
 
-  const closingDelimAt = (r) => {
-    return delimAt(r) && (txt[r] === '$' || txt[r + 1] === ')');
+  const pairsWith = (delim1, delim2) => {
+    if (delim1[0] === '$') {
+      return delim1 === delim2;
+    } else {
+      if (delim1[1] === '(') {
+        return delim2[1] === ')';
+      }
+      if (delim1[1] === '[') {
+        return delim2[1] === ']';
+      }
+    }
+    return false;
   };
 
   let l = 0,
     r = 0;
   while (l < txt.length) {
-    if (
-      openingDelimAt(l) &&
-      (bounds.length === 0 || l !== bounds[bounds.length - 1][1])
-    ) {
+    let leftDelim = delimAt(l);
+    let rightDelim;
+    if (isOpeningDelim(leftDelim)) {
       r = l + 2;
+      rightDelim = delimAt(r);
 
-      while (r + 1 < txt.length && !(closingDelimAt(r) && txt[l] == txt[r])) {
-        if (openingDelimAt(r) && txt[l] == txt[r]) {
+      while (r + 1 < txt.length && !pairsWith(leftDelim, rightDelim)) {
+        if (leftDelim === rightDelim) {
           l = r;
           r += 2;
+          leftDelim = delimAt(l);
+          rightDelim = delimAt(r);
         } else {
-          r++;
+          rightDelim = delimAt(++r);
         }
       }
 
-      if (closingDelimAt(r) && txt[l] == txt[r]) {
+      if (pairsWith(leftDelim, rightDelim)) {
         bounds.push([l, r]);
       }
     }
-    l++;
+
+    if (bounds.length === 0 || l > bounds[bounds.length - 1][1]) {
+      l++;
+    } else {
+      l = bounds[bounds.length - 1][1] + rightDelim.length;
+    }
   }
 
   return bounds;
+};
+
+const insertLineBreaks = (span) => {
+  console.log(`inserting line breaks`);
+  const baseSpans = span.querySelectorAll(
+    'span:where(.katex, .katex-display) span.katex-html > span.base'
+  );
+  let collectiveSpanWidth = 0;
+
+  for (let baseSpan of baseSpans) {
+    collectiveSpanWidth += baseSpan.getBoundingClientRect().width;
+  }
+
+  let partialSumOfSpanWidths = collectiveSpanWidth;
+  if (baseSpans.length > 0) {
+    let i = baseSpans.length - 1;
+    let j = 0;
+    const insertLineBreak = () => {
+      console.log(
+        `collectiveSpanWidth = ${collectiveSpanWidth}, baseSpans[0].parentNode.getBoundingClientRect().width = ${
+          baseSpans[0].parentNode.getBoundingClientRect().width
+        }`
+      );
+      if (
+        collectiveSpanWidth >
+          baseSpans[0].parentNode.getBoundingClientRect().width &&
+        i > j
+      ) {
+        if (
+          partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width <=
+            baseSpans[0].parentNode.getBoundingClientRect().width - 10 ||
+          i - j === 1
+        ) {
+          const spacer = document.createElement('div');
+          spacer.style.margin = '10px 0px';
+          baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
+
+          if (
+            collectiveSpanWidth -
+              (partialSumOfSpanWidths -
+                baseSpans[i].getBoundingClientRect().width) >
+            baseSpans[0].parentNode.getBoundingClientRect().width - 10
+          ) {
+            partialSumOfSpanWidths =
+              collectiveSpanWidth -
+              (partialSumOfSpanWidths -
+                baseSpans[i].getBoundingClientRect().width);
+            collectiveSpanWidth = partialSumOfSpanWidths;
+            j = i;
+            i = baseSpans.length - 1;
+
+            insertLineBreak();
+          }
+        } else {
+          partialSumOfSpanWidths -=
+            baseSpans[i--].getBoundingClientRect().width;
+
+          insertLineBreak();
+        }
+      }
+    };
+    insertLineBreak();
+  }
+};
+
+const removeLineBreaks = (span) => {
+  span.querySelectorAll('div').forEach((div) => {
+    if (div.style.margin === '10px 0px' && div.attributes.length === 1) {
+      div.remove();
+    }
+  });
 };
 
 const startUp = () => {
@@ -274,6 +420,9 @@ const startUp = () => {
   domInfo.listenToDocumentVisibility();
 
   domInfo.setThreadContainer();
+  domInfo.setThreadContainerWidth();
+  domInfo.observeThreadContainerWidth();
+
   domInfo.setMessageGrid();
   const waitToHandleChat = () => {
     if (domInfo.getMessageGrid() === null) {
@@ -282,7 +431,7 @@ const startUp = () => {
         waitToHandleChat();
       }, 100);
     } else {
-      domInfo.observeThreadContainer();
+      domInfo.observeThreadContainerChildList();
       domInfo.handleChatBubbles();
       domInfo.observeChatBubbles();
     }
