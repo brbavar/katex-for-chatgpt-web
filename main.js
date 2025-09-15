@@ -40,52 +40,13 @@ class DomInfo {
   });
 
   #threadContainerWidthObserver = new ResizeObserver(() => {
-    // console.log(`resize observed`);
     if (
       this.#threadContainer.getBoundingClientRect().width !==
       this.#threadContainerWidth
     ) {
-      // console.log(`current width differs from stored width`);
       this.#threadContainerWidth =
         this.#threadContainer.getBoundingClientRect().width;
 
-      console.log(`message grid:`);
-      console.log(
-        this.#messageGrid.querySelectorAll(
-          `div.user-message-bubble-color > ${this.#messageSelector}`
-        )
-      );
-
-      // // this.#messageGrid
-      // //   .querySelectorAll(
-      // //     `div.user-message-bubble-color > ${
-      // //       this.#messageSelector
-      // //     } span:not(.katex-scrollable):where(div > div.whitespace-pre-wrap > .katex, .katex-display)`
-      // //   )
-      // this.#messageGrid
-      //   .querySelectorAll(
-      //     `div.user-message-bubble-color > ${
-      //       this.#messageSelector
-      //     } span:not(.katex-scrollable):where(div > div > .katex, .katex-display)`
-      //   )
-      //   .forEach((span) => {
-      //     undoMakeFit(span);
-      //     makeFit(span);
-      //   });
-
-      // this.#messageGrid
-      //   .querySelectorAll(
-      //     `div.user-message-bubble-color > ${
-      //       this.#messageSelector
-      //     } span.katex-scrollable`
-      //   )
-      //   .forEach((span) => {
-      //     console.log(`adjusting width of scrollable span:`);
-      //     console.log(span);
-      //     span.style.width = `${
-      //       span.parentNode.getBoundingClientRect().width
-      //     }px`;
-      //   });
       this.#messageGrid
         .querySelectorAll(
           `div.user-message-bubble-color > ${
@@ -246,19 +207,11 @@ class DomInfo {
           console.error('Caught ' + error);
         }
 
-        // makeFit(span);
-
         extractDescendants(span);
       });
 
-      // msg.classList.remove('whitespace-pre-wrap');
-      // if (msg.getAttribute('class') === '') {
-      //   msg.removeAttribute('class');
-      // }
-
       const wrapInlineContent = (msg, inlineDiv, i) => {
         if (i < msg.childNodes.length) {
-          // inlineDiv.classList.add('whitespace-pre-wrap');
           let msgPart = msg.childNodes[i];
 
           if (
@@ -285,7 +238,6 @@ class DomInfo {
             msg.insertBefore(inlineDiv, msgPart);
 
             inlineDiv = document.createElement('div');
-            // inlineDiv.classList.add('whitespace-pre-wrap');
           } else {
             msgPart.remove();
 
@@ -420,9 +372,6 @@ const getTexBounds = (msg) => {
 };
 
 const makeFit = (span) => {
-  // const baseSpans = span.querySelectorAll(
-  //   'span:where(.katex, .katex-display) span.katex-html > span.base'
-  // );
   const baseSpans = span.querySelectorAll('span.base');
   let collectiveSpanWidth = 0;
 
@@ -432,14 +381,8 @@ const makeFit = (span) => {
 
   let partialSumOfSpanWidths = collectiveSpanWidth;
   if (baseSpans.length > 0) {
-    // const msg = span.parentNode;
-    // const spanContainer = span.parentNode;
     let oversizedBaseFound = false;
     for (const baseSpan of baseSpans) {
-      // if (
-      //   baseSpan.getBoundingClientRect().width >
-      //   msg.getBoundingClientRect().width
-      // ) {
       if (
         baseSpan.getBoundingClientRect().width >
         span.parentNode.getBoundingClientRect().width
@@ -450,18 +393,6 @@ const makeFit = (span) => {
     }
 
     if (oversizedBaseFound) {
-      // span.style.width = `${span.parentNode.getBoundingClientRect().width}px`;
-      // if (!span.classList.contains('katex-scrollable')) {
-      //   // const katexSpan = span.firstElementChild;
-      //   // katexSpan.classList.add('katex-scrollable');
-
-      //   // if (katexSpan.getAttribute('class') === 'katex katex-scrollable') {
-      //   //   katexSpan.style.display = 'inline-block';
-      //   // }
-      //   // katexSpan.style.width = `${msg.getBoundingClientRect().width}px`;
-      //   // katexSpan.style.overflowX = 'scroll';
-      //   // katexSpan.style.overflowY = 'hidden';
-      //   // katexSpan.style.scrollbarWidth = 'none';
       span.classList.add('katex-scrollable');
 
       if (span.getAttribute('class') === 'katex katex-scrollable') {
@@ -471,10 +402,6 @@ const makeFit = (span) => {
       span.style.overflowX = 'scroll';
       span.style.overflowY = 'hidden';
       span.style.scrollbarWidth = 'none';
-      // }
-      // // else {
-      // //   span.style.width = `${span.parentNode.getBoundingClientRect().width}px`;
-      // // }
     } else {
       let i = baseSpans.length - 1;
       let j = 0;
