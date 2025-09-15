@@ -29,12 +29,10 @@ The extension is automatically activated and ready to go!
 
 While composing a message at chatgpt.com, write your TeX code between `$$` and `$$`, or `\[` and `\]`, if you want to display mathematical notation centered on its own line. Enclose your code in `$ ... $` or `\( ... \)` if you want your mathematical notation on the same line as other mathematical expressions or ordinary text. The math is rendered only after you hit send (no live preview).
 
+If you share your chat with someone, the notation in your messages will only be typeset for them if they're using this extension too.
+
 Here are a couple examples of what the extension can do:
 <br><br>
 <img width="667" height="289" alt="Screenshot 2025-08-09 at 9 06 57 PM" src="https://github.com/user-attachments/assets/bfb139ca-b1a6-4c79-bf69-b841160f2dea" />
 <br><br>
 <img width="667" height="577" alt="Screenshot 2025-08-09 at 9 06 33 PM" src="https://github.com/user-attachments/assets/6a996e85-fb25-4a72-a0b5-0745c052831e" />
-
-## Limitations
-
-- The typesetting of notation in your messages is not visible to anyone you send a link to your chat. It is visible to you alone.
