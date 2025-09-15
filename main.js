@@ -21,15 +21,28 @@ class DomInfo {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         let thread = null;
-        if (
-          'querySelector' in node &&
-          (thread = node.querySelector(this.#messageGridSelector))
-        ) {
-          this.#chatBubbleObserver.disconnect();
-          this.#messageGrid = thread;
-          this.handleChatBubbles();
-          this.observeChatBubbles();
-        }
+        // console.log(`node added to thread container child list:`);
+        // console.log(node);
+        // console.log(
+        //   `node.querySelector(this.#messageGridSelector = ${node.querySelector(
+        //     this.#messageGridSelector
+        //   )}`
+        // );
+        const waitForMessageGrid = () => {
+          if (
+            'querySelector' in node &&
+            (thread = node.querySelector(this.#messageGridSelector))
+          ) {
+            // console.log(`thread changed`);
+            this.#chatBubbleObserver.disconnect();
+            this.#messageGrid = thread;
+            this.handleChatBubbles();
+            this.observeChatBubbles();
+          } else {
+            setTimeout(waitForMessageGrid, 100);
+          }
+        };
+        waitForMessageGrid();
       });
     });
   });
@@ -42,10 +55,32 @@ class DomInfo {
       this.#threadContainerWidth =
         this.#threadContainer.getBoundingClientRect().width;
 
-      this.#messageGrid.querySelectorAll('span.renderable').forEach((span) => {
-        removeLineBreaks(span);
-        insertLineBreaks(span);
-      });
+      // // // this.#messageGrid.querySelectorAll('span.renderable').forEach((span) => {
+      // // this.#messageGrid
+      // //   .querySelectorAll(
+      // //     `div.user-message-bubble-color > ${
+      // //       this.#messageSelector
+      // //     } > span:where(.katex,.katex-display)`
+      // //   )
+      // //   .forEach((span) => {
+      // this.#messageGrid
+      //   .querySelectorAll(
+      //     `div.user-message-bubble-color > ${
+      //       this.#messageSelector
+      //     } > :where(div > span.katex, span.katex-display:not(.katex-scrollable))`
+      //   )
+      //   .forEach((span) => {
+      this.#messageGrid
+        .querySelectorAll(
+          `div.user-message-bubble-color > ${
+            this.#messageSelector
+          } > :not(.katex-scrollable):where(div > span.katex, span.katex-display)`
+        )
+        .forEach((span) => {
+          // console.log(`adjusting line breaks as needed`);
+          removeLineBreaks(span);
+          insertLineBreaks(span);
+        });
     }
   });
 
@@ -68,6 +103,8 @@ class DomInfo {
   }
 
   observeThreadContainerChildList() {
+    // console.log(`observing thread container child list`);
+    // console.log(`this.#threadContainer = ${this.#threadContainer}`);
     this.#threadContainerChildListObserver.observe(this.#threadContainer, {
       childList: true,
     });
@@ -197,7 +234,233 @@ class DomInfo {
         }
 
         insertLineBreaks(span);
+
+        // const childOfSpan = span.firstElementChild;
+        // childOfSpan.remove();
+        // span.parentNode.insertBefore(childOfSpan, span);
+        // span.remove();
+        extractDescendants(span);
       });
+
+      msg.classList.remove('whitespace-pre-wrap');
+
+      // const inlineMsgParts = [];
+      // for (const msgPart of msg.childNodes) {
+      //   if (
+      //     'classList' in msgPart &&
+      //     msgPart.classList.contains('katex-display')
+      //   ) {
+      //     const inlineDiv = document.createElement('div');
+      //     msg.insertBefore(inlineDiv, msgPart);
+      //     for (const part of inlineMsgParts) {
+      //     }
+      //     inlineMsgParts.length = 0;
+      //   } else {
+      //     inlineMsgParts.push(msgPart);
+      //   }
+
+      //   if (inlineMsgParts.length > 0) {
+
+      //   }
+      // }
+
+      // let inlineDiv = document.createElement('div');
+      // inlineDiv.classList.add('whitespace-pre-wrap');
+      // for (const msgPart of msg.childNodes) {
+      //   console.log(`msgPart:`);
+      //   console.log(msgPart);
+      //   if (
+      //     'classList' in msgPart &&
+      //     msgPart.classList.contains('katex-display')
+      //   ) {
+      //     msg.insertBefore(inlineDiv, msgPart);
+      //     // break;
+      //     inlineDiv = document.createElement('div');
+      //     inlineDiv.classList.add('whitespace-pre-wrap');
+      //   } else {
+      //     msgPart.remove();
+      //     inlineDiv.appendChild(msgPart);
+      //   }
+      // }
+      // if (inlineDiv.parentElement === null || inlineDiv.parentElement !== msg) {
+      //   msg.appendChild(inlineDiv);
+      // }
+
+      // const wrapInlineContent = (i) => {
+      //   let inlineDiv = document.createElement('div');
+      //   inlineDiv.classList.add('whitespace-pre-wrap');
+      //   // for (const msgPart of msg.childNodes) {
+      //   let msgPart;
+      //   for (let j = i; j < msg.childNodes.length; j++) {
+      //     msgPart = msg.childNodes[j];
+      //     console.log(`msgPart:`);
+      //     console.log(msgPart);
+      //     if (
+      //       'classList' in msgPart &&
+      //       msgPart.classList.contains('katex-display')
+      //     ) {
+      //       msg.insertBefore(inlineDiv, msgPart);
+      //       // break;
+      //       inlineDiv = document.createElement('div');
+      //       inlineDiv.classList.add('whitespace-pre-wrap');
+      //     } else {
+      //       msgPart.remove();
+      //       inlineDiv.appendChild(msgPart);
+      //     }
+      //   }
+      //   if (
+      //     inlineDiv.parentElement === null ||
+      //     inlineDiv.parentElement !== msg
+      //   ) {
+      //     msg.appendChild(inlineDiv);
+      //   }
+      // };
+
+      // for (const node of msg.childNodes) {
+      //   console.log(`child node:`);
+      //   console.log(node);
+      // }
+
+      const wrapInlineContent = (
+        msg,
+        inlineDiv,
+        i /*childNodeIndex,
+        childIndex*/
+      ) => {
+        // console.log(
+        //   `childNodeIndex = ${childNodeIndex}: ${msg.childNodes.length} child nodes found`
+        // );
+        console.log(`i = ${i}: ${msg.childNodes.length} child nodes found`);
+        for (const child of msg.childNodes) {
+          console.log(`child.textContent = ${child.textContent}`);
+        }
+        // if (childNodeIndex < msg.childNodes.length) {
+        if (i < msg.childNodes.length) {
+          inlineDiv.classList.add('whitespace-pre-wrap');
+          // let msgPart = msg.childNodes[childNodeIndex];
+          let msgPart = msg.childNodes[i];
+          console.log(`msgPart:`);
+          console.log(msgPart);
+
+          // const j = msg.children.indexOf(msgPart);
+          // const j = Array.from(msg.children).indexOf(msgPart);
+          // const j = [...msg.children].indexOf(msgPart);
+
+          // let msgPartEl = null;
+          // for (const child of msg.children) {
+          //   if (msgPart.isEqualNode(child)) {
+          //     msgPartEl = child;
+          //   }
+          // }
+
+          if (
+            'hasAttribute' in msgPart &&
+            msgPart.hasAttribute('class') &&
+            msgPart.classList.contains('katex-display')
+          ) {
+            const lastInlineNode =
+              inlineDiv.childNodes[inlineDiv.childNodes.length - 1];
+            // console.log(`lastInlineNode:`);
+            // console.log(lastInlineNode);
+            // console.log(
+            //   `last char of lastInlineNode.textContent === '\\n' = ${
+            //     lastInlineNode.textContent[
+            //       lastInlineNode.textContent.length - 1
+            //     ] === '\n'
+            //   }`
+            // );
+            let j;
+            for (
+              j = lastInlineNode.textContent.length - 1;
+              j >= 0 && lastInlineNode.textContent[j] === '\n';
+              j--
+            ) {}
+            if (lastInlineNode.textContent[++j] === '\n') {
+              lastInlineNode.textContent = lastInlineNode.textContent.substring(
+                0,
+                j
+              );
+            }
+            // inlineDiv.textContent = inlineDiv.textContent.trim();
+            // // if (j !== -1 && msg.children[j].classList.contains('katex-display')) {
+            // // if (
+            // //   msgPartEl !== null &&
+            // //   msgPartEl.classList.contains('katex-display')
+            // // ) {
+            // console.log(`msgPart.nodeType = ${msgPart.nodeType}`);
+            // // if (msgPart.nodeType === Node.ELEMENT_NODE) {
+            // console.log(`this is an element:`);
+            // console.log(msgPart);
+            // childIndex++;
+            // if (
+            //   msg.children[++childIndex].classList.contains('katex-display')
+            // ) {
+            i = inlineDiv.childNodes.length + 1;
+            // inlineDiv.style.boxSizing = '';
+            // inlineDiv.style.height = 'fit-content';
+            msg.insertBefore(inlineDiv, msgPart);
+            console.log(`AFTER INSERTION`);
+            for (const node of msg.childNodes) {
+              console.log(`child node:`);
+              console.log(node);
+            }
+            // break;
+            inlineDiv = document.createElement('div');
+            inlineDiv.classList.add('whitespace-pre-wrap');
+          } else {
+            msgPart.remove();
+            console.log(`AFTER REMOVAL`);
+            for (const node of msg.childNodes) {
+              console.log(`child node:`);
+              console.log(node);
+            }
+
+            inlineDiv.appendChild(msgPart);
+          }
+          wrapInlineContent(msg, inlineDiv, i);
+          // }
+          // else {
+          //   msgPart.remove();
+          //   console.log(`AFTER REMOVAL`);
+          //   for (const node of msg.childNodes) {
+          //     console.log(`child node:`);
+          //     console.log(node);
+          //   }
+          //   inlineDiv.appendChild(msgPart);
+          // }
+          // wrapInlineContent(msg, inlineDiv, ++childNodeIndex, childIndex);
+        } else {
+          if (inlineDiv.childNodes.length > 0) {
+            const firstInlineNode = inlineDiv.childNodes[0];
+            // if (firstInlineNode.textContent[0] === '\n') {
+            //   firstInlineNode.textContent =
+            //     firstInlineNode.textContent.substring(1);
+            // }
+            // // inlineDiv.textContent = inlineDiv.textContent.trim();
+            let j;
+            for (
+              j = 0;
+              j < firstInlineNode.textContent.length &&
+              firstInlineNode.textContent[j] === '\n';
+              j++
+            ) {}
+            if (firstInlineNode.textContent[j - 1] === '\n') {
+              firstInlineNode.textContent =
+                firstInlineNode.textContent.substring(j);
+            }
+
+            msg.appendChild(inlineDiv);
+          }
+        }
+      };
+      // if (
+      //   inlineDiv.parentElement === null ||
+      //   inlineDiv.parentElement !== msg
+      // ) {
+      //   msg.appendChild(inlineDiv);
+      // }
+      let inlineDiv = document.createElement('div');
+      wrapInlineContent(msg, inlineDiv, 0 /*, -1*/);
     }
   }
 
@@ -209,6 +472,7 @@ class DomInfo {
   }
 
   disconnectObservers() {
+    // console.log(`disconnecting observers`);
     this.#threadContainerWidthObserver.unobserve(this.#threadContainer);
     this.#threadContainerChildListObserver.disconnect();
     this.#chatBubbleObserver.disconnect();
@@ -309,48 +573,161 @@ const insertLineBreaks = (span) => {
 
   let partialSumOfSpanWidths = collectiveSpanWidth;
   if (baseSpans.length > 0) {
-    let i = baseSpans.length - 1;
-    let j = 0;
-    const insertLineBreak = () => {
+    const msg = span.parentNode;
+    let oversizedBaseFound = false;
+    // console.log(`msg:`);
+    // console.log(msg);
+    // console.log(
+    //   `msg.getBoundingClientRect().width = ${msg.getBoundingClientRect().width}`
+    // );
+    for (const baseSpan of baseSpans) {
+      // console.log(`baseSpan:`);
+      // console.log(baseSpan);
+      // console.log(
+      //   `baseSpan.getBoundingClientRect().width = ${
+      //     baseSpan.getBoundingClientRect().width
+      //   }`
+      // );
       if (
-        collectiveSpanWidth >
-          baseSpans[0].parentNode.getBoundingClientRect().width &&
-        i > j
+        baseSpan.getBoundingClientRect().width >
+        msg.getBoundingClientRect().width
       ) {
-        if (
-          partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width <=
-            baseSpans[0].parentNode.getBoundingClientRect().width - 10 ||
-          i - j === 1
-        ) {
-          const spacer = document.createElement('div');
-          spacer.style.margin = '10px 0px';
-          baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
-
-          if (
-            collectiveSpanWidth -
-              (partialSumOfSpanWidths -
-                baseSpans[i].getBoundingClientRect().width) >
-            baseSpans[0].parentNode.getBoundingClientRect().width - 10
-          ) {
-            partialSumOfSpanWidths =
-              collectiveSpanWidth -
-              (partialSumOfSpanWidths -
-                baseSpans[i].getBoundingClientRect().width);
-            collectiveSpanWidth = partialSumOfSpanWidths;
-            j = i;
-            i = baseSpans.length - 1;
-
-            insertLineBreak();
-          }
-        } else {
-          partialSumOfSpanWidths -=
-            baseSpans[i--].getBoundingClientRect().width;
-
-          insertLineBreak();
-        }
+        oversizedBaseFound = true;
+        break;
       }
-    };
-    insertLineBreak();
+    }
+
+    if (oversizedBaseFound) {
+      // console.log(`setting overflow-x to scroll`);
+      const katexSpan = span.firstElementChild;
+      // let katexSpan = span.firstElementChild;
+      // if (span.firstElementChild.getAttribute('class') === 'katex') {
+      //   katexSpan = document.createElement('span');
+      //   const inlineKatex = span.firstElementChild;
+      //   span.insertBefore(katexSpan, inlineKatex);
+      //   inlineKatex.remove();
+      //   katexSpan.appendChild(inlineKatex);
+      // }
+      katexSpan.classList.add('katex-scrollable');
+
+      if (katexSpan.getAttribute('class') === 'katex katex-scrollable') {
+        katexSpan.style.display = 'inline-block';
+      }
+      katexSpan.style.width = `${msg.getBoundingClientRect().width}px`;
+      katexSpan.style.overflowX = 'scroll';
+      katexSpan.style.overflowY = 'hidden';
+      katexSpan.style.scrollbarWidth = 'none';
+      // const katexHtmlSpan = baseSpans[0].parentNode;
+      // katexHtmlSpan.style.width = `${msg.getBoundingClientRect().width}px`;
+      // katexHtmlSpan.style.overflowX = 'scroll';
+      // katexHtmlSpan.style.overflowY = 'hidden';
+      // katexHtmlSpan.style.scrollbarWidth = 'none';
+    } else {
+      let i = baseSpans.length - 1;
+      let j = 0;
+      // console.log(`baseSpans[0]`);
+      // console.log(baseSpans[0]);
+      // console.log(`i = ${i}, j = ${j}`);
+      // baseSpans[0].parentNode.style.width = '100%';
+      // const insertLineBreak = () => {
+      //   if (
+      //     collectiveSpanWidth >
+      //     baseSpans[0].parentNode.getBoundingClientRect().width
+      //   ) {
+      //     console.log(`formula too wide for container`);
+      //     if (i > j) {
+      //       if (
+      //         partialSumOfSpanWidths -
+      //           baseSpans[i].getBoundingClientRect().width <=
+      //           baseSpans[0].parentNode.getBoundingClientRect().width - 10 ||
+      //         i - j === 1
+      //       ) {
+      //         const spacer = document.createElement('div');
+      //         spacer.style.margin = '10px 0px';
+      //         baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
+
+      //         if (
+      //           collectiveSpanWidth -
+      //             (partialSumOfSpanWidths -
+      //               baseSpans[i].getBoundingClientRect().width) >
+      //           baseSpans[0].parentNode.getBoundingClientRect().width - 10
+      //         ) {
+      //           partialSumOfSpanWidths =
+      //             collectiveSpanWidth -
+      //             (partialSumOfSpanWidths -
+      //               baseSpans[i].getBoundingClientRect().width);
+      //           collectiveSpanWidth = partialSumOfSpanWidths;
+      //           j = i;
+      //           i = baseSpans.length - 1;
+
+      //           insertLineBreak();
+      //         }
+      //       } else {
+      //         partialSumOfSpanWidths -=
+      //           baseSpans[i--].getBoundingClientRect().width;
+
+      //         insertLineBreak();
+      //       }
+      //     } else {
+      //       console.log(`setting overflow-x to scroll`);
+      //       baseSpans[0].style.overflowX = 'scroll';
+      //     }
+      //   }
+      // };
+      const insertLineBreak = () => {
+        if (
+          collectiveSpanWidth > span.parentNode.getBoundingClientRect().width
+        ) {
+          // console.log(`formula too wide for container`);
+          if (i > j) {
+            if (
+              partialSumOfSpanWidths -
+                baseSpans[i].getBoundingClientRect().width <=
+                span.parentNode.getBoundingClientRect().width - 10 ||
+              i - j === 1
+            ) {
+              const spacer = document.createElement('div');
+              spacer.style.margin = '10px 0px';
+              baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
+
+              if (
+                collectiveSpanWidth -
+                  (partialSumOfSpanWidths -
+                    baseSpans[i].getBoundingClientRect().width) >
+                span.parentNode.getBoundingClientRect().width - 10
+              ) {
+                partialSumOfSpanWidths =
+                  collectiveSpanWidth -
+                  (partialSumOfSpanWidths -
+                    baseSpans[i].getBoundingClientRect().width);
+                collectiveSpanWidth = partialSumOfSpanWidths;
+                j = i;
+                i = baseSpans.length - 1;
+
+                insertLineBreak();
+              }
+            } else {
+              partialSumOfSpanWidths -=
+                baseSpans[i--].getBoundingClientRect().width;
+
+              insertLineBreak();
+            }
+          }
+          // else {
+          //   console.log(`setting overflow-x to scroll`);
+          //   baseSpans[0].style.width = `${
+          //     span.parentNode.getBoundingClientRect().width
+          //   }px`;
+          //   // baseSpans[0].style.width = '100px';
+          //   baseSpans[0].style.overflowX = 'scroll';
+          //   baseSpans[0].style.overflowY = 'hidden';
+          //   // baseSpans[0].style.scrollbarWidth = 'thin';
+          //   baseSpans[0].style.scrollbarWidth = 'none';
+          // }
+        }
+      };
+      insertLineBreak();
+    }
   }
 };
 
@@ -362,6 +739,13 @@ const removeLineBreaks = (span) => {
   });
 };
 
+const extractDescendants = (span) => {
+  const childOfSpan = span.firstElementChild;
+  childOfSpan.remove();
+  span.parentNode.insertBefore(childOfSpan, span);
+  span.remove();
+};
+
 const startUp = () => {
   const domInfo = new DomInfo();
 
@@ -369,7 +753,7 @@ const startUp = () => {
 
   domInfo.setThreadContainer();
   domInfo.setThreadContainerWidth();
-  domInfo.observeThreadContainerWidth();
+  // domInfo.observeThreadContainerWidth();
 
   domInfo.setMessageGrid();
   const waitToHandleChat = () => {
@@ -379,6 +763,7 @@ const startUp = () => {
         waitToHandleChat();
       }, 100);
     } else {
+      domInfo.observeThreadContainerWidth();
       domInfo.observeThreadContainerChildList();
       domInfo.handleChatBubbles();
       domInfo.observeChatBubbles();
