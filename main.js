@@ -2,6 +2,7 @@ class DomInfo {
   #threadContainer = null;
   #messageGrid = null;
   #threadContainerWidth = -1;
+  #escapeCharIndices = [];
   #threadContainerId = 'main';
   #messageGridSelector =
     '#thread div:has(> article[data-testid^="conversation-turn"].text-token-text-primary)';
@@ -110,6 +111,91 @@ class DomInfo {
     });
   }
 
+  getTexBounds(msg) {
+    const txt = msg.textContent;
+    const bounds = [];
+
+    const delimAt = (i) => {
+      let delim = '';
+      if ((txt[i] === '$' || txt[i] === '\\') && i > 0 && txt[i - 1] === '\\') {
+        this.#escapeCharIndices.push(i - 1);
+      } else {
+        if (txt[i] === '$') {
+          delim += '$';
+          if (txt[i + 1] === '$') {
+            delim += '$';
+          }
+        }
+        if (txt[i] === '\\') {
+          if (
+            txt[i + 1] === '(' ||
+            txt[i + 1] === ')' ||
+            txt[i + 1] === '[' ||
+            txt[i + 1] === ']'
+          ) {
+            delim = `${txt[i]}${txt[i + 1]}`;
+          }
+        }
+      }
+      return delim;
+    };
+
+    const isOpeningDelim = (delim) => {
+      if (delim.length === 0) {
+        return false;
+      }
+      return delim[0] === '$' || delim[1] === '(' || delim[1] === '[';
+    };
+
+    const pairsWith = (delim1, delim2) => {
+      if (delim1[0] === '$') {
+        return delim1 === delim2;
+      } else {
+        if (delim1[1] === '(') {
+          return delim2[1] === ')';
+        }
+        if (delim1[1] === '[') {
+          return delim2[1] === ']';
+        }
+      }
+      return false;
+    };
+
+    let l = 0,
+      r = 0;
+    while (l < txt.length) {
+      let leftDelim = delimAt(l);
+      let rightDelim;
+      if (isOpeningDelim(leftDelim)) {
+        r = l + 2;
+        rightDelim = delimAt(r);
+
+        while (r + 1 < txt.length && !pairsWith(leftDelim, rightDelim)) {
+          if (leftDelim === rightDelim) {
+            l = r;
+            r += 2;
+            leftDelim = delimAt(l);
+            rightDelim = delimAt(r);
+          } else {
+            rightDelim = delimAt(++r);
+          }
+        }
+
+        if (pairsWith(leftDelim, rightDelim)) {
+          bounds.push([l, r]);
+        }
+      }
+
+      if (bounds.length === 0 || l > bounds[bounds.length - 1][1]) {
+        l++;
+      } else {
+        l = bounds[bounds.length - 1][1] + rightDelim.length;
+      }
+    }
+
+    return bounds;
+  }
+
   handleChatBubbles(bubbleSource) {
     const bubbleHandler = (source) => {
       if (source && 'querySelectorAll' in source) {
@@ -154,15 +240,82 @@ class DomInfo {
     }
   }
 
+  removeEscapeChars(msgPart) {
+    for (let i = 0; i < this.#escapeCharIndices.length; i++) {
+      msgPart.textContent = `${msgPart.textContent.substring(
+        0,
+        this.#escapeCharIndices[i]
+      )}${msgPart.textContent.substring(this.#escapeCharIndices[i] + 1)}`;
+
+      for (let j = i + 1; j < this.#escapeCharIndices.length; j++) {
+        if (this.#escapeCharIndices[i] < this.#escapeCharIndices[j]) {
+          this.#escapeCharIndices[j]--;
+        }
+      }
+    }
+    this.#escapeCharIndices.length = 0;
+  }
+
+  removeEscapeCharsOutsideBounds(msgPart, texBounds) {
+    const outerEscapeCharIndices = [];
+    for (let i = 0; i < this.#escapeCharIndices.length; i++) {
+      for (let j = 0; j < texBounds.length; j++) {
+        if (
+          this.#escapeCharIndices[i] > texBounds[j][0] &&
+          this.#escapeCharIndices[i] < texBounds[j][1]
+        ) {
+          break;
+        } else {
+          if (j === texBounds.length - 1) {
+            if (!outerEscapeCharIndices.includes(this.#escapeCharIndices[i])) {
+              outerEscapeCharIndices.push(this.#escapeCharIndices[i]);
+            }
+          }
+        }
+      }
+    }
+
+    this.#escapeCharIndices.length = 0;
+
+    for (let i = 0; i < outerEscapeCharIndices.length; i++) {
+      msgPart.textContent = `${msgPart.textContent.substring(
+        0,
+        outerEscapeCharIndices[i]
+      )}${msgPart.textContent.substring(outerEscapeCharIndices[i] + 1)}`;
+      for (let j = 0; j < texBounds.length; j++) {
+        for (let k = 0; k < 2; k++) {
+          if (texBounds[j][k] > outerEscapeCharIndices[i]) {
+            texBounds[j][k]--;
+          }
+        }
+      }
+
+      for (let j = i + 1; j < outerEscapeCharIndices.length; j++) {
+        if (outerEscapeCharIndices[i] < outerEscapeCharIndices[j]) {
+          outerEscapeCharIndices[j]--;
+        }
+      }
+    }
+  }
+
   parseContent(bubble) {
     const msg = bubble.querySelector(this.#messageSelector);
+    // const msgParts = [];
+    // wrapTextNodes(bubble, msgParts);
+
+    // for (const msgPart of msgParts) {
     let texBounds;
 
     if (msg !== null && msg.textContent !== '') {
-      texBounds = getTexBounds(msg);
+      texBounds = this.getTexBounds(msg);
+      // if (msgPart !== null && msgPart.textContent !== '') {
+      //   texBounds = this.getTexBounds(msgPart);
     }
 
     if (texBounds !== undefined && texBounds.length) {
+      this.removeEscapeCharsOutsideBounds(msg, texBounds);
+      // this.removeEscapeCharsOutsideBounds(msgPart, texBounds);
+
       for (let i = 0; i < texBounds.length; i++) {
         const offset = 32 * i;
         const delimLen =
@@ -180,11 +333,28 @@ class DomInfo {
         )}</span>${msg.textContent.substring(
           texBounds[i][1] + delimLen + offset
         )}`;
+        // const delimLen =
+        //   msgPart.textContent[texBounds[i][0] + offset] === '$' &&
+        //   msgPart.textContent[texBounds[i][0] + offset + 1] !== '$'
+        //     ? 1
+        //     : 2;
+
+        // msgPart.textContent = `${msgPart.textContent.substring(
+        //   0,
+        //   texBounds[i][0] + offset
+        // )}<span class='renderable'>${msgPart.textContent.substring(
+        //   texBounds[i][0] + offset,
+        //   texBounds[i][1] + delimLen + offset
+        // )}</span>${msgPart.textContent.substring(
+        //   texBounds[i][1] + delimLen + offset
+        // )}`;
       }
 
       msg.innerHTML = msg.textContent;
+      // msgPart.innerHTML = msgPart.textContent;
 
       msg.querySelectorAll('span.renderable').forEach((span) => {
+        // msgPart.querySelectorAll('span.renderable').forEach((span) => {
         try {
           const hasDollarDelim = span.textContent[0] === '$';
           const hasSingleDollarDelim =
@@ -210,69 +380,35 @@ class DomInfo {
         extractDescendants(span);
       });
 
-      const wrapInlineContent = (msg, inlineDiv, i) => {
-        if (i < msg.childNodes.length) {
-          let msgPart = msg.childNodes[i];
+      // let inlineDiv = document.createElement('div');
+      // wrapInlineContent(msg, inlineDiv);
 
-          if (
-            'hasAttribute' in msgPart &&
-            msgPart.hasAttribute('class') &&
-            msgPart.classList.contains('katex-display')
-          ) {
-            const lastInlineNode =
-              inlineDiv.childNodes[inlineDiv.childNodes.length - 1];
-            let j;
-            for (
-              j = lastInlineNode.textContent.length - 1;
-              j >= 0 && lastInlineNode.textContent[j] === '\n';
-              j--
-            ) {}
-            if (lastInlineNode.textContent[++j] === '\n') {
-              lastInlineNode.textContent = lastInlineNode.textContent.substring(
-                0,
-                j
-              );
-            }
-
-            i = inlineDiv.childNodes.length + 1;
-            msg.insertBefore(inlineDiv, msgPart);
-
-            inlineDiv = document.createElement('div');
-          } else {
-            msgPart.remove();
-
-            inlineDiv.appendChild(msgPart);
-          }
-          wrapInlineContent(msg, inlineDiv, i);
-        } else {
-          if (inlineDiv.childNodes.length > 0) {
-            const firstInlineNode = inlineDiv.childNodes[0];
-            let j;
-            for (
-              j = 0;
-              j < firstInlineNode.textContent.length &&
-              firstInlineNode.textContent[j] === '\n';
-              j++
-            ) {}
-            if (firstInlineNode.textContent[j - 1] === '\n') {
-              firstInlineNode.textContent =
-                firstInlineNode.textContent.substring(j);
-            }
-
-            msg.appendChild(inlineDiv);
-          }
-        }
-      };
-
-      let inlineDiv = document.createElement('div');
-      wrapInlineContent(msg, inlineDiv, 0);
+      // msg
+      //   .querySelectorAll('span:where(div > div > .katex, .katex-display)')
+      //   .forEach((span) => {
+      //     makeFit(span);
+      //   });
+      removeNewlines(msg);
+      // removeNewlines(msgPart);
 
       msg
-        .querySelectorAll('span:where(div > div > .katex, .katex-display)')
+        .querySelectorAll('span:where(div > .katex, .katex-display)')
         .forEach((span) => {
           makeFit(span);
         });
+      // msgPart
+      //   .querySelectorAll('span:where(div > .katex, .katex-display)')
+      //   .forEach((span) => {
+      //     makeFit(span);
+      //   });
+
+      // extractDescendants(msgPart);
+    } else {
+      this.removeEscapeChars(msg);
+      // this.removeEscapeChars(msgPart);
+      // extractDescendants(msgPart);
     }
+    // }
   }
 
   listenToDocumentVisibility() {
@@ -289,86 +425,216 @@ class DomInfo {
   }
 }
 
-const getTexBounds = (msg) => {
-  const txt = msg.textContent;
-  const bounds = [];
+// const wrapTextNodes = (root, msgParts) => {
+//   for (const node of root.childNodes) {
+//     if (node.nodeName !== 'CODE') {
+//       if (node.constructor.name === 'Text') {
+//         const span = document.createElement('span');
+//         span.textContent = node.textContent;
+//         node.parentNode.insertBefore(span, node);
+//         node.remove();
 
-  const delimAt = (i) => {
-    let delim = '';
-    if (txt[i] === '$') {
-      delim += '$';
-      if (txt[i + 1] === '$') {
-        delim += '$';
-      }
-    } else {
-      if (txt[i] === '\\') {
-        if (
-          txt[i + 1] === '(' ||
-          txt[i + 1] === ')' ||
-          txt[i + 1] === '[' ||
-          txt[i + 1] === ']'
-        ) {
-          delim = `${txt[i]}${txt[i + 1]}`;
+//         msgParts.push(span);
+//       } else {
+//         wrapTextNodes(node, msgParts);
+//       }
+//     }
+//   }
+// };
+
+// const injectCss = (filePath) => {
+//   const css = document.createElement('link');
+//   css.rel = 'stylesheet';
+//   // Should not be using chrome.runtime.getURL in non-Chrome versions of the extension...
+//   css.href = chrome.runtime.getURL(filePath);
+//   css.type = 'text/css';
+//   document.head.appendChild(css);
+// };
+
+// // // for (filePath of ['katex/katex.min.css', 'chatgpt.katex.css']) injectCss(filePath);
+// injectCss('chatgpt.katex.css');
+
+// const getTexBounds = (msg) => {
+//   const txt = msg.textContent;
+//   const bounds = [];
+
+//   const delimAt = (i) => {
+//     let delim = '';
+//     if (txt[i] === '$') {
+//       delim += '$';
+//       if (txt[i + 1] === '$') {
+//         delim += '$';
+//       }
+//     } else {
+//       if (txt[i] === '\\') {
+//         if (
+//           txt[i + 1] === '(' ||
+//           txt[i + 1] === ')' ||
+//           txt[i + 1] === '[' ||
+//           txt[i + 1] === ']'
+//         ) {
+//           delim = `${txt[i]}${txt[i + 1]}`;
+//         }
+//       }
+//     }
+//     return delim;
+//   };
+
+//   const isOpeningDelim = (delim) => {
+//     if (delim.length === 0) {
+//       return false;
+//     }
+//     return delim[0] === '$' || delim[1] === '(' || delim[1] === '[';
+//   };
+
+//   const pairsWith = (delim1, delim2) => {
+//     if (delim1[0] === '$') {
+//       return delim1 === delim2;
+//     } else {
+//       if (delim1[1] === '(') {
+//         return delim2[1] === ')';
+//       }
+//       if (delim1[1] === '[') {
+//         return delim2[1] === ']';
+//       }
+//     }
+//     return false;
+//   };
+
+//   let l = 0,
+//     r = 0;
+//   while (l < txt.length) {
+//     let leftDelim = delimAt(l);
+//     let rightDelim;
+//     if (isOpeningDelim(leftDelim)) {
+//       r = l + 2;
+//       rightDelim = delimAt(r);
+
+//       while (r + 1 < txt.length && !pairsWith(leftDelim, rightDelim)) {
+//         if (leftDelim === rightDelim) {
+//           l = r;
+//           r += 2;
+//           leftDelim = delimAt(l);
+//           rightDelim = delimAt(r);
+//         } else {
+//           rightDelim = delimAt(++r);
+//         }
+//       }
+
+//       if (pairsWith(leftDelim, rightDelim)) {
+//         bounds.push([l, r]);
+//       }
+//     }
+
+//     if (bounds.length === 0 || l > bounds[bounds.length - 1][1]) {
+//       l++;
+//     } else {
+//       l = bounds[bounds.length - 1][1] + rightDelim.length;
+//     }
+//   }
+
+//   return bounds;
+// };
+
+// const wrapInlineContent = (msg, inlineBlock, i = 0) => {
+//   if (i < msg.childNodes.length) {
+//     let msgPart = msg.childNodes[i];
+
+//     if (
+//       'hasAttribute' in msgPart &&
+//       msgPart.hasAttribute('class') &&
+//       msgPart.classList.contains('katex-display')
+//     ) {
+//       const lastInlineNode =
+//         inlineBlock.childNodes[inlineBlock.childNodes.length - 1];
+//       let j;
+//       for (
+//         j = lastInlineNode.textContent.length - 1;
+//         j >= 0 && lastInlineNode.textContent[j] === '\n';
+//         j--
+//       ) {}
+//       if (lastInlineNode.textContent[++j] === '\n') {
+//         lastInlineNode.textContent = lastInlineNode.textContent.substring(0, j);
+//       }
+
+//       i = inlineBlock.childNodes.length + 1;
+//       msg.insertBefore(inlineBlock, msgPart);
+
+//       inlineBlock = document.createElement('div');
+//     } else {
+//       msgPart.remove();
+
+//       inlineBlock.appendChild(msgPart);
+//     }
+//     wrapInlineContent(msg, inlineBlock, i);
+//   } else {
+//     if (inlineBlock.childNodes.length > 0) {
+//       const firstInlineNode = inlineBlock.childNodes[0];
+//       let j;
+//       for (
+//         j = 0;
+//         j < firstInlineNode.textContent.length &&
+//         firstInlineNode.textContent[j] === '\n';
+//         j++
+//       ) {}
+//       if (firstInlineNode.textContent[j - 1] === '\n') {
+//         firstInlineNode.textContent = firstInlineNode.textContent.substring(j);
+//       }
+
+//       msg.appendChild(inlineBlock);
+//     }
+//   }
+// };
+const removeNewlines = (msg) => {
+  const inlineNodeIndices = [];
+  let i = 0;
+  while (i < msg.childNodes.length) {
+    let msgPart = msg.childNodes[i];
+
+    if (
+      'hasAttribute' in msgPart &&
+      msgPart.hasAttribute('class') &&
+      msgPart.classList.contains('katex-display')
+    ) {
+      if (inlineNodeIndices.length > 0) {
+        const lastInlineNodeIndex =
+          inlineNodeIndices[inlineNodeIndices.length - 1];
+        const lastInlineNode = msg.childNodes[lastInlineNodeIndex];
+        let j;
+        if (lastInlineNode.nodeValue !== null) {
+          for (
+            j = lastInlineNode.nodeValue.length - 1;
+            j >= 0 && lastInlineNode.nodeValue[j] === '\n';
+            j--
+          ) {}
+          if (lastInlineNode.nodeValue[++j] === '\n') {
+            lastInlineNode.nodeValue = lastInlineNode.nodeValue.substring(0, j);
+          }
         }
       }
-    }
-    return delim;
-  };
 
-  const isOpeningDelim = (delim) => {
-    if (delim.length === 0) {
-      return false;
-    }
-    return delim[0] === '$' || delim[1] === '(' || delim[1] === '[';
-  };
-
-  const pairsWith = (delim1, delim2) => {
-    if (delim1[0] === '$') {
-      return delim1 === delim2;
+      inlineNodeIndices.length = 0;
     } else {
-      if (delim1[1] === '(') {
-        return delim2[1] === ')';
-      }
-      if (delim1[1] === '[') {
-        return delim2[1] === ']';
-      }
+      inlineNodeIndices.push(i);
     }
-    return false;
-  };
-
-  let l = 0,
-    r = 0;
-  while (l < txt.length) {
-    let leftDelim = delimAt(l);
-    let rightDelim;
-    if (isOpeningDelim(leftDelim)) {
-      r = l + 2;
-      rightDelim = delimAt(r);
-
-      while (r + 1 < txt.length && !pairsWith(leftDelim, rightDelim)) {
-        if (leftDelim === rightDelim) {
-          l = r;
-          r += 2;
-          leftDelim = delimAt(l);
-          rightDelim = delimAt(r);
-        } else {
-          rightDelim = delimAt(++r);
-        }
-      }
-
-      if (pairsWith(leftDelim, rightDelim)) {
-        bounds.push([l, r]);
-      }
-    }
-
-    if (bounds.length === 0 || l > bounds[bounds.length - 1][1]) {
-      l++;
-    } else {
-      l = bounds[bounds.length - 1][1] + rightDelim.length;
-    }
+    i++;
   }
 
-  return bounds;
+  if (inlineNodeIndices.length > 0) {
+    const firstInlineNode = msg.childNodes[inlineNodeIndices[0]];
+    let j;
+    if (firstInlineNode.nodeValue !== null) {
+      for (
+        j = 0;
+        j < firstInlineNode.nodeValue.length &&
+        firstInlineNode.nodeValue[j] === '\n';
+        j++
+      ) {}
+      if (firstInlineNode.nodeValue[j - 1] === '\n') {
+        firstInlineNode.nodeValue = firstInlineNode.nodeValue.substring(j);
+      }
+    }
+  }
 };
 
 const makeFit = (span) => {
@@ -401,7 +667,9 @@ const makeFit = (span) => {
       span.style.width = `${span.parentNode.getBoundingClientRect().width}px`;
       span.style.overflowX = 'scroll';
       span.style.overflowY = 'hidden';
-      span.style.scrollbarWidth = 'none';
+      // span.style.scrollbarWidth = 'none';
+      span.style.scrollbarWidth = 'thin';
+      span.style.scrollbarColor = 'rgba(135, 135, 135, 0.2) transparent';
     } else {
       let i = baseSpans.length - 1;
       let j = 0;
@@ -464,10 +732,29 @@ const undoMakeFit = (span) => {
 
 const extractDescendants = (span) => {
   const childOfSpan = span.firstElementChild;
-  childOfSpan.remove();
-  span.parentNode.insertBefore(childOfSpan, span);
+  if (childOfSpan !== null) {
+    childOfSpan.remove();
+    span.parentNode.insertBefore(childOfSpan, span);
+  }
   span.remove();
 };
+// const extractDescendants = (span) => {
+//   // const childOfSpan = span.firstElementChild;
+//   // if (childOfSpan !== null) {
+//   //   childOfSpan.remove();
+//   //   span.parentNode.insertBefore(childOfSpan, span);
+//   // }
+//   let childOfSpan = span.firstElementChild;
+//   if (childOfSpan === null) {
+//     childOfSpan = span.firstChild;
+//     span.removeChild(childOfSpan);
+//     span.parentNode.insertBefore(childOfSpan, span);
+//   } else {
+//     childOfSpan.remove();
+//     span.parentNode.insertBefore(childOfSpan, span);
+//   }
+//   span.remove();
+// };
 
 const startUp = () => {
   const domInfo = new DomInfo();
