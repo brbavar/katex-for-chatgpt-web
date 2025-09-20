@@ -300,21 +300,14 @@ class DomInfo {
 
   parseContent(bubble) {
     const msg = bubble.querySelector(this.#messageSelector);
-    // const msgParts = [];
-    // wrapTextNodes(bubble, msgParts);
-
-    // for (const msgPart of msgParts) {
     let texBounds;
 
     if (msg !== null && msg.textContent !== '') {
       texBounds = this.getTexBounds(msg);
-      // if (msgPart !== null && msgPart.textContent !== '') {
-      //   texBounds = this.getTexBounds(msgPart);
     }
 
     if (texBounds !== undefined && texBounds.length) {
       this.removeEscapeCharsOutsideBounds(msg, texBounds);
-      // this.removeEscapeCharsOutsideBounds(msgPart, texBounds);
 
       for (let i = 0; i < texBounds.length; i++) {
         const offset = 32 * i;
@@ -333,28 +326,11 @@ class DomInfo {
         )}</span>${msg.textContent.substring(
           texBounds[i][1] + delimLen + offset
         )}`;
-        // const delimLen =
-        //   msgPart.textContent[texBounds[i][0] + offset] === '$' &&
-        //   msgPart.textContent[texBounds[i][0] + offset + 1] !== '$'
-        //     ? 1
-        //     : 2;
-
-        // msgPart.textContent = `${msgPart.textContent.substring(
-        //   0,
-        //   texBounds[i][0] + offset
-        // )}<span class='renderable'>${msgPart.textContent.substring(
-        //   texBounds[i][0] + offset,
-        //   texBounds[i][1] + delimLen + offset
-        // )}</span>${msgPart.textContent.substring(
-        //   texBounds[i][1] + delimLen + offset
-        // )}`;
       }
 
       msg.innerHTML = msg.textContent;
-      // msgPart.innerHTML = msgPart.textContent;
 
       msg.querySelectorAll('span.renderable').forEach((span) => {
-        // msgPart.querySelectorAll('span.renderable').forEach((span) => {
         try {
           const hasDollarDelim = span.textContent[0] === '$';
           const hasSingleDollarDelim =
@@ -380,35 +356,16 @@ class DomInfo {
         extractDescendants(span);
       });
 
-      // let inlineDiv = document.createElement('div');
-      // wrapInlineContent(msg, inlineDiv);
-
-      // msg
-      //   .querySelectorAll('span:where(div > div > .katex, .katex-display)')
-      //   .forEach((span) => {
-      //     makeFit(span);
-      //   });
       removeNewlines(msg);
-      // removeNewlines(msgPart);
 
       msg
         .querySelectorAll('span:where(div > .katex, .katex-display)')
         .forEach((span) => {
           makeFit(span);
         });
-      // msgPart
-      //   .querySelectorAll('span:where(div > .katex, .katex-display)')
-      //   .forEach((span) => {
-      //     makeFit(span);
-      //   });
-
-      // extractDescendants(msgPart);
     } else {
       this.removeEscapeChars(msg);
-      // this.removeEscapeChars(msgPart);
-      // extractDescendants(msgPart);
     }
-    // }
   }
 
   listenToDocumentVisibility() {
@@ -425,166 +382,6 @@ class DomInfo {
   }
 }
 
-// const wrapTextNodes = (root, msgParts) => {
-//   for (const node of root.childNodes) {
-//     if (node.nodeName !== 'CODE') {
-//       if (node.constructor.name === 'Text') {
-//         const span = document.createElement('span');
-//         span.textContent = node.textContent;
-//         node.parentNode.insertBefore(span, node);
-//         node.remove();
-
-//         msgParts.push(span);
-//       } else {
-//         wrapTextNodes(node, msgParts);
-//       }
-//     }
-//   }
-// };
-
-// const injectCss = (filePath) => {
-//   const css = document.createElement('link');
-//   css.rel = 'stylesheet';
-//   // Should not be using chrome.runtime.getURL in non-Chrome versions of the extension...
-//   css.href = chrome.runtime.getURL(filePath);
-//   css.type = 'text/css';
-//   document.head.appendChild(css);
-// };
-
-// // // for (filePath of ['katex/katex.min.css', 'chatgpt.katex.css']) injectCss(filePath);
-// injectCss('chatgpt.katex.css');
-
-// const getTexBounds = (msg) => {
-//   const txt = msg.textContent;
-//   const bounds = [];
-
-//   const delimAt = (i) => {
-//     let delim = '';
-//     if (txt[i] === '$') {
-//       delim += '$';
-//       if (txt[i + 1] === '$') {
-//         delim += '$';
-//       }
-//     } else {
-//       if (txt[i] === '\\') {
-//         if (
-//           txt[i + 1] === '(' ||
-//           txt[i + 1] === ')' ||
-//           txt[i + 1] === '[' ||
-//           txt[i + 1] === ']'
-//         ) {
-//           delim = `${txt[i]}${txt[i + 1]}`;
-//         }
-//       }
-//     }
-//     return delim;
-//   };
-
-//   const isOpeningDelim = (delim) => {
-//     if (delim.length === 0) {
-//       return false;
-//     }
-//     return delim[0] === '$' || delim[1] === '(' || delim[1] === '[';
-//   };
-
-//   const pairsWith = (delim1, delim2) => {
-//     if (delim1[0] === '$') {
-//       return delim1 === delim2;
-//     } else {
-//       if (delim1[1] === '(') {
-//         return delim2[1] === ')';
-//       }
-//       if (delim1[1] === '[') {
-//         return delim2[1] === ']';
-//       }
-//     }
-//     return false;
-//   };
-
-//   let l = 0,
-//     r = 0;
-//   while (l < txt.length) {
-//     let leftDelim = delimAt(l);
-//     let rightDelim;
-//     if (isOpeningDelim(leftDelim)) {
-//       r = l + 2;
-//       rightDelim = delimAt(r);
-
-//       while (r + 1 < txt.length && !pairsWith(leftDelim, rightDelim)) {
-//         if (leftDelim === rightDelim) {
-//           l = r;
-//           r += 2;
-//           leftDelim = delimAt(l);
-//           rightDelim = delimAt(r);
-//         } else {
-//           rightDelim = delimAt(++r);
-//         }
-//       }
-
-//       if (pairsWith(leftDelim, rightDelim)) {
-//         bounds.push([l, r]);
-//       }
-//     }
-
-//     if (bounds.length === 0 || l > bounds[bounds.length - 1][1]) {
-//       l++;
-//     } else {
-//       l = bounds[bounds.length - 1][1] + rightDelim.length;
-//     }
-//   }
-
-//   return bounds;
-// };
-
-// const wrapInlineContent = (msg, inlineBlock, i = 0) => {
-//   if (i < msg.childNodes.length) {
-//     let msgPart = msg.childNodes[i];
-
-//     if (
-//       'hasAttribute' in msgPart &&
-//       msgPart.hasAttribute('class') &&
-//       msgPart.classList.contains('katex-display')
-//     ) {
-//       const lastInlineNode =
-//         inlineBlock.childNodes[inlineBlock.childNodes.length - 1];
-//       let j;
-//       for (
-//         j = lastInlineNode.textContent.length - 1;
-//         j >= 0 && lastInlineNode.textContent[j] === '\n';
-//         j--
-//       ) {}
-//       if (lastInlineNode.textContent[++j] === '\n') {
-//         lastInlineNode.textContent = lastInlineNode.textContent.substring(0, j);
-//       }
-
-//       i = inlineBlock.childNodes.length + 1;
-//       msg.insertBefore(inlineBlock, msgPart);
-
-//       inlineBlock = document.createElement('div');
-//     } else {
-//       msgPart.remove();
-
-//       inlineBlock.appendChild(msgPart);
-//     }
-//     wrapInlineContent(msg, inlineBlock, i);
-//   } else {
-//     if (inlineBlock.childNodes.length > 0) {
-//       const firstInlineNode = inlineBlock.childNodes[0];
-//       let j;
-//       for (
-//         j = 0;
-//         j < firstInlineNode.textContent.length &&
-//         firstInlineNode.textContent[j] === '\n';
-//         j++
-//       ) {}
-//       if (firstInlineNode.textContent[j - 1] === '\n') {
-//         firstInlineNode.textContent = firstInlineNode.textContent.substring(j);
-//       }
-
-//       msg.appendChild(inlineBlock);
-//     }
-//   }
-// };
 const removeNewlines = (msg) => {
   const inlineNodeIndices = [];
   let i = 0;
@@ -667,7 +464,6 @@ const makeFit = (span) => {
       span.style.width = `${span.parentNode.getBoundingClientRect().width}px`;
       span.style.overflowX = 'scroll';
       span.style.overflowY = 'hidden';
-      // span.style.scrollbarWidth = 'none';
       span.style.scrollbarWidth = 'thin';
       span.style.scrollbarColor = 'rgba(135, 135, 135, 0.2) transparent';
     } else {
@@ -738,23 +534,6 @@ const extractDescendants = (span) => {
   }
   span.remove();
 };
-// const extractDescendants = (span) => {
-//   // const childOfSpan = span.firstElementChild;
-//   // if (childOfSpan !== null) {
-//   //   childOfSpan.remove();
-//   //   span.parentNode.insertBefore(childOfSpan, span);
-//   // }
-//   let childOfSpan = span.firstElementChild;
-//   if (childOfSpan === null) {
-//     childOfSpan = span.firstChild;
-//     span.removeChild(childOfSpan);
-//     span.parentNode.insertBefore(childOfSpan, span);
-//   } else {
-//     childOfSpan.remove();
-//     span.parentNode.insertBefore(childOfSpan, span);
-//   }
-//   span.remove();
-// };
 
 const startUp = () => {
   const domInfo = new DomInfo();
