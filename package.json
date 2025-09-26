@@ -1,0 +1,22 @@
+{
+  "scripts": {
+    "build": "esbuild main.js --bundle --outdir=dist --format=esm && cp manifest.json *.css dist"
+  },
+  "targets": {
+    "manifest": {
+      "source": "./manifest.json"
+    },
+    "main": {
+      "source": "./main.js",
+      "distDir": "./dist",
+      "outputFormat": "esmodule",
+      "isLibrary": false
+    }
+  },
+  "dependencies": {
+    "katex": "^0.16.22"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.10"
+  }
+}

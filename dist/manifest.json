@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "KaTeX for ChatGPT",
+  "version": "1.0",
+  "description": "Send messages containing typeset mathematical notation to GPT on the ChatGPT website.",
+  "permissions": [],
+  "content_scripts": [
+    {
+      "js": ["main.js"],
+      "matches": ["https://chatgpt.com/*"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["chatgpt.katex.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

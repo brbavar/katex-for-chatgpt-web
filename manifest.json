@@ -6,13 +6,13 @@
   "permissions": [],
   "content_scripts": [
     {
-      "matches": ["https://chatgpt.com/*"],
-      "js": ["katex/katex.min.js", "main.js"]
+      "js": ["main.js"],
+      "matches": ["https://chatgpt.com/*"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["katex/katex.min.css", "katex/fonts/*"],
+      "resources": ["chatgpt.katex.css"],
       "matches": ["<all_urls>"]
     }
   ]

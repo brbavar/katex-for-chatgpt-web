@@ -1,0 +1,18 @@
+/* span.katex-scrollable span.base {
+  background-image: linear-gradient(to right, white, rgba(50, 50, 50, 0.85));
+  background-clip: text;
+  color: transparent;
+}
+
+span.katex-scrollable span.msupsub {
+  color: white;
+} */
+
+:not(.katex-display):has(> span:where(.katex, .katex-display)) {
+  /* display: inline-block; */
+  display: block;
+}
+
+/* :not(.katex-display) > span:where(.katex, .katex-display) {
+  display: inline-block;
+} */
