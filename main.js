@@ -1,9 +1,6 @@
 import * as selector from './selector.js';
-// import { render } from 'katex';
-// const katexUrl = chrome.runtime.getURL('katex.js');
 import { parseParts } from './parse.js';
-import { /*removeNewlines,*/ makeFit, undoMakeFit } from './aesthetex.js';
-// import { extractDescendants } from './dom-cleanup.js';
+import { makeFit, undoMakeFit } from './aesthetex.js';
 
 class DomInfo {
   #threadContainer = null;
@@ -48,14 +45,6 @@ class DomInfo {
       this.#threadContainerWidth =
         this.#threadContainer.getBoundingClientRect().width;
 
-      // this.#messageGrid
-      //   .querySelectorAll(
-      //     `div.user-message-bubble-color > ${selector.message} span:where(div > div > .katex, .katex-display)`
-      //   )
-      //   .forEach((span) => {
-      //     undoMakeFit(span);
-      //     makeFit(span);
-      //   });
       this.#messageGrid
         .querySelectorAll(
           `div.user-message-bubble-color > ${selector.message} span:where(:not(.katex-display) > .katex, .katex-display)`
@@ -122,32 +111,7 @@ class DomInfo {
       if (source && 'querySelectorAll' in source) {
         const chatBubbles = source.querySelectorAll(selector.chatBubble);
         chatBubbles.forEach((bubble) => {
-          // if (bubble.textContent === '') {
-          //   const waitToParseParts = () => {
-          //     if (
-          //       bubble.textContent === '' ||
-          //       bubble.querySelector(selector.message) === null
-          //     ) {
-          //       setTimeout(waitToParseParts, 100);
-          //     } else {
-          //       let txt = bubble.textContent;
-          //       const waitForCompleteMessage = () => {
-          //         setTimeout(() => {
-          //           if (bubble.textContent !== txt) {
-          //             txt = bubble.textContent;
-          //             waitForCompleteMessage();
-          //           } else {
-          //             parseParts(bubble);
-          //           }
-          //         }, 100);
-          //       };
-          //       waitForCompleteMessage();
-          //     }
-          //   };
-          //   waitToParseParts();
-          // } else {
           parseParts(bubble);
-          // }
         });
       }
     };

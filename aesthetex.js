@@ -1,20 +1,3 @@
-// // import { scrollbarColor } from './chatgpt-modules/scroll-config.js';
-// import dotenv from 'dotenv';
-
-// dotenv.config();
-
-// let scrollbarColor;
-// const loadScrollConfig = async () => {
-//   try {
-//     const scrollConfig = await import(
-//       `./${process.env.PLATFORM}-modules/scroll-config.js`
-//     );
-//     scrollbarColor = scrollConfig.scrollbarColor;
-//   } catch (error) {
-//     console.error('Failed to load module:', error);
-//   }
-// };
-// loadScrollConfig();
 import { scrollbarColor } from './scroll-config.js';
 
 const removeNewlines = (msg) => {
@@ -70,16 +53,6 @@ const removeNewlines = (msg) => {
 };
 
 const makeFit = (span) => {
-  // // const spanParentWidth = parseFloat(
-  // //   span.parentNode.style.width.substring(
-  // //     0,
-  // //     span.parentNode.style.width.length - 2
-  // //   )
-  // // );
-  // const spanParentWidth = parseFloat(
-  //   span.parentNode.width.substring(0, span.parentNode.width.length - 2)
-  // );
-
   const baseSpans = span.querySelectorAll('span.base');
   let collectiveSpanWidth = 0;
 
@@ -94,26 +67,11 @@ const makeFit = (span) => {
       if (
         baseSpan.getBoundingClientRect().width >
         span.parentNode.getBoundingClientRect().width
-        /*span.parentNode.style.width*/
-        /*spanParentWidth*/
       ) {
         oversizedBaseFound = true;
         break;
       }
     }
-
-    // console.log(`span:`);
-    // console.log(span);
-    // console.log(`oversizedBaseFound = ${oversizedBaseFound}`);
-    // console.log(
-    //   `span.parentNode.style.width = ${
-    //     span.parentNode.style.width
-    //   }, span.parentNode.width = ${
-    //     span.parentNode.width
-    //   }, spanParentWidth = ${spanParentWidth}, span.parentNode.getBoundingClientRect().width = ${
-    //     span.parentNode.getBoundingClientRect().width
-    //   }`
-    // );
 
     if (oversizedBaseFound) {
       span.classList.add('katex-scrollable');
@@ -122,8 +80,6 @@ const makeFit = (span) => {
         span.style.display = 'inline-block';
       }
       span.style.width = `${span.parentNode.getBoundingClientRect().width}px`;
-      // span.style.width = span.parentNode.style.width;
-      // span.width = span.parentNode.width;
       span.style.overflowX = 'scroll';
       span.style.overflowY = 'hidden';
       span.style.scrollbarWidth = 'thin';
