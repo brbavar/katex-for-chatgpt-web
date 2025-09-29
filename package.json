@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "esbuild main.js --bundle --outdir=dist --format=esm && cp manifest.json *.css dist"
+    "build": "esbuild main.js --bundle --outdir=dist --format=iife && cp manifest.json *.css dist"
   },
   "targets": {
     "manifest": {

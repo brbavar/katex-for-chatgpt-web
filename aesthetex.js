@@ -1,4 +1,18 @@
 import { scrollbarColor } from './scroll-config.js';
+import manifest from './manifest.json';
+
+const injectCss = () => {
+  for (const resource of manifest.web_accessible_resources[0].resources) {
+    if (resource.endsWith('.css')) {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      // Should not use chrome.runtime API in Safari (and should use cautiously in Firefox)
+      css.href = chrome.runtime.getURL(resource);
+      css.type = 'text/css';
+      document.head.appendChild(css);
+    }
+  }
+};
 
 const removeNewlines = (msg) => {
   const inlineNodeIndices = [];
@@ -144,4 +158,4 @@ const undoMakeFit = (span) => {
   span.removeAttribute('style');
 };
 
-export { removeNewlines, makeFit, undoMakeFit };
+export { injectCss, removeNewlines, makeFit, undoMakeFit };
