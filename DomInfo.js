@@ -5,8 +5,6 @@ class DomInfo extends DomInfoCore {
     if (document.hidden) {
       this.disconnectObservers();
     } else {
-      //   this.observeThreadContainerWidth();
-      //   this.observeThreadContainerChildList();
       this.observeChatWidth();
       this.observeChatContainer();
       this.observeChatBubbles();

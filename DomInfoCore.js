@@ -127,10 +127,8 @@ class DomInfoCore {
 
   setMessageGrid(pointOfReference = this.#chat) {
     if (selector.labeledMessageGrid === undefined) {
-      // console.log(`labeledMessageGrid selector is NOT defined`);
       this.#messageGrid = this.#chat;
     } else {
-      // console.log(`labeledMessageGrid selector IS defined`);
       let grid = pointOfReference.querySelector(selector.labeledMessageGrid);
       // Conditional statement below may be unnecessary
       if (grid === null) {

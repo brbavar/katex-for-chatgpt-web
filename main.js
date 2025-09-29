@@ -8,8 +8,6 @@ const startUp = () => {
 
   domInfo.listenToDocumentVisibility();
 
-  // domInfo.setThreadContainer();
-  // domInfo.setThreadContainerWidth();
   domInfo.setChatContainer();
   domInfo.setResizeObservee();
   domInfo.setChatWidth();
@@ -24,8 +22,6 @@ const startUp = () => {
         waitToHandleChat();
       }, 100);
     } else {
-      // domInfo.observeThreadContainerWidth();
-      // domInfo.observeThreadContainerChildList();
       domInfo.observeChatWidth();
       domInfo.observeChatContainer();
       domInfo.handleChatBubbles();
