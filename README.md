@@ -36,3 +36,7 @@ Here are a couple examples of what the extension can do:
 <img width="667" height="289" alt="Screenshot 2025-08-09 at 9 06 57 PM" src="https://github.com/user-attachments/assets/bfb139ca-b1a6-4c79-bf69-b841160f2dea" />
 <br><br>
 <img width="667" height="577" alt="Screenshot 2025-08-09 at 9 06 33 PM" src="https://github.com/user-attachments/assets/6a996e85-fb25-4a72-a0b5-0745c052831e" />
+
+## Limitations
+
+- Though KaTeX officially supports the `subarray` environment, this extension can't seem to render it properly. You'll have to use the `\substack` command instead, which I have confirmed works perfectly and produces the same results `subarray` is supposed to (only the lines of the substack are center aligned, and you can't change that like you can with `subarray`).
