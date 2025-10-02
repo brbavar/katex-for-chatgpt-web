@@ -1,144 +1,9 @@
 (() => {
-  // scroll-config.js
-  var scrollbarColor = "rgba(135, 135, 135, 0.2) transparent";
-
-  // manifest.json
-  var manifest_default = {
-    manifest_version: 3,
-    name: "KaTeX for ChatGPT",
-    version: "1",
-    description: "Send messages containing typeset mathematical notation to GPT on the ChatGPT website.",
-    permissions: [],
-    content_scripts: [
-      {
-        js: ["main.js"],
-        matches: ["https://chatgpt.com/*"]
-      }
-    ],
-    web_accessible_resources: [
-      {
-        resources: ["chatgpt.katex.css"],
-        matches: ["https://chatgpt.com/*"]
-      }
-    ]
-  };
-
-  // aesthetex.js
-  var injectCss = () => {
-    for (const resource of manifest_default.web_accessible_resources[0].resources) {
-      if (resource.endsWith(".css")) {
-        const css = document.createElement("link");
-        css.rel = "stylesheet";
-        css.href = chrome.runtime.getURL(resource);
-        css.type = "text/css";
-        document.head.appendChild(css);
-      }
-    }
-  };
-  var removeNewlines = (msg) => {
-    const inlineNodeIndices = [];
-    let i = 0;
-    while (i < msg.childNodes.length) {
-      let msgPart = msg.childNodes[i];
-      if ("hasAttribute" in msgPart && msgPart.hasAttribute("class") && msgPart.classList.contains("katex-display")) {
-        if (inlineNodeIndices.length > 0) {
-          const lastInlineNodeIndex = inlineNodeIndices[inlineNodeIndices.length - 1];
-          const lastInlineNode = msg.childNodes[lastInlineNodeIndex];
-          let j;
-          if (lastInlineNode.nodeValue !== null) {
-            for (j = lastInlineNode.nodeValue.length - 1; j >= 0 && lastInlineNode.nodeValue[j] === "\n"; j--) {
-            }
-            if (lastInlineNode.nodeValue[++j] === "\n") {
-              lastInlineNode.nodeValue = lastInlineNode.nodeValue.substring(0, j);
-            }
-          }
-        }
-        inlineNodeIndices.length = 0;
-      } else {
-        inlineNodeIndices.push(i);
-      }
-      i++;
-    }
-    if (inlineNodeIndices.length > 0) {
-      const firstInlineNode = msg.childNodes[inlineNodeIndices[0]];
-      let j;
-      if (firstInlineNode.nodeValue !== null) {
-        for (j = 0; j < firstInlineNode.nodeValue.length && firstInlineNode.nodeValue[j] === "\n"; j++) {
-        }
-        if (firstInlineNode.nodeValue[j - 1] === "\n") {
-          firstInlineNode.nodeValue = firstInlineNode.nodeValue.substring(j);
-        }
-      }
-    }
-  };
-  var makeFit = (span) => {
-    const baseSpans = span.querySelectorAll("span.base");
-    let collectiveSpanWidth = 0;
-    for (let baseSpan of baseSpans) {
-      collectiveSpanWidth += baseSpan.getBoundingClientRect().width;
-    }
-    let partialSumOfSpanWidths = collectiveSpanWidth;
-    if (baseSpans.length > 0) {
-      let oversizedBaseFound = false;
-      for (const baseSpan of baseSpans) {
-        if (baseSpan.getBoundingClientRect().width > span.parentNode.getBoundingClientRect().width) {
-          oversizedBaseFound = true;
-          break;
-        }
-      }
-      if (oversizedBaseFound) {
-        span.classList.add("katex-scrollable");
-        if (span.getAttribute("class") === "katex katex-scrollable") {
-          span.style.display = "inline-block";
-        }
-        span.style.width = `${span.parentNode.getBoundingClientRect().width}px`;
-        span.style.overflowX = "scroll";
-        span.style.overflowY = "hidden";
-        span.style.scrollbarWidth = "thin";
-        span.style.scrollbarColor = scrollbarColor;
-      } else {
-        let i = baseSpans.length - 1;
-        let j = 0;
-        const insertLineBreak = () => {
-          if (collectiveSpanWidth > span.parentNode.getBoundingClientRect().width) {
-            if (i > j) {
-              if (partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width <= span.parentNode.getBoundingClientRect().width - 10 || i - j === 1) {
-                const spacer = document.createElement("div");
-                spacer.style.margin = "10px 0px";
-                baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
-                if (collectiveSpanWidth - (partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width) > span.parentNode.getBoundingClientRect().width - 10) {
-                  partialSumOfSpanWidths = collectiveSpanWidth - (partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width);
-                  collectiveSpanWidth = partialSumOfSpanWidths;
-                  j = i;
-                  i = baseSpans.length - 1;
-                  insertLineBreak();
-                }
-              } else {
-                partialSumOfSpanWidths -= baseSpans[i--].getBoundingClientRect().width;
-                insertLineBreak();
-              }
-            }
-          }
-        };
-        insertLineBreak();
-      }
-    }
-  };
-  var undoMakeFit = (span) => {
-    span.querySelectorAll("div").forEach((div) => {
-      if (div.style.margin === "10px 0px" && div.attributes.length === 1) {
-        div.remove();
-      }
-    });
-    span.classList.remove("katex-scrollable");
-    span.removeAttribute("style");
-  };
-
   // selector.js
   var resizableChat = '#thread div:has(> article[data-testid^="conversation-turn"].text-token-text-primary)';
   var chatContainer = "#main";
   var resizeObservee = chatContainer;
-  var chatBubble = 'div[data-message-author-role="user"] div.user-message-bubble-color, div[data-message-author-role="assistant"] div.markdown.prose';
+  var chatBubble = 'div[data-message-author-role="user"] div.user-message-bubble-color';
   var message = "div.whitespace-pre-wrap";
   var katex = `div.user-message-bubble-color > ${message} span:where(:not(.katex-display) > .katex, .katex-display)`;
 
@@ -14551,11 +14416,178 @@
     }
   };
 
+  // util.js
+  var isOfTheClasses = (node, theCs) => {
+    for (const c of theCs) {
+      if (node === null || !("classList" in node) || !node.classList.contains(c)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // config.js
+  var scrollbarColor = "rgba(135, 135, 135, 0.2) transparent";
+  var emptyBubbleMessage = '<div style="max-width: 430px;">LaTeX for ChatGPT failed to render your LaTeX, so your message<br>had no visible content. ChatGPT read what you typed, though.<br>Try again if you want to see your message yourself.<br>(Check console for any parsing errors.)</div>';
+  var isGridChunk = (el) => {
+    return ancestor.hasAttribute("data-turn-id") && ancestor.getAttribute("data-testid").startsWith("conversation-turn") && isOfTheClasses(ancestor, ["text-token-text-primary"]);
+  };
+
+  // manifest.json
+  var manifest_default = {
+    manifest_version: 3,
+    name: "LaTeX for ChatGPT",
+    version: "1",
+    description: "Send messages containing typeset mathematical notation to GPT on the ChatGPT website.",
+    content_scripts: [
+      {
+        js: ["main.js"],
+        matches: ["https://chatgpt.com/*"]
+      }
+    ],
+    web_accessible_resources: [
+      {
+        resources: ["chatgpt.katex.css"],
+        matches: ["https://chatgpt.com/*"]
+      }
+    ],
+    options_ui: {
+      page: "options.html",
+      open_in_tab: false
+    },
+    permissions: ["storage"]
+  };
+
+  // aesthetex.js
+  var injectCss = () => {
+    for (const resource of manifest_default.web_accessible_resources[0].resources) {
+      if (resource.endsWith(".css")) {
+        const css = document.createElement("link");
+        css.rel = "stylesheet";
+        css.href = chrome.runtime.getURL(resource);
+        css.type = "text/css";
+        document.head.appendChild(css);
+      }
+    }
+  };
+  var removeNewlines = (msg) => {
+    const inlineNodeIndices = [];
+    let i = 0;
+    while (i < msg.childNodes.length) {
+      let msgPart = msg.childNodes[i];
+      if ("hasAttribute" in msgPart && msgPart.hasAttribute("class") && msgPart.classList.contains("katex-display")) {
+        if (inlineNodeIndices.length > 0) {
+          const lastInlineNodeIndex = inlineNodeIndices[inlineNodeIndices.length - 1];
+          const lastInlineNode = msg.childNodes[lastInlineNodeIndex];
+          let j;
+          if (lastInlineNode.nodeValue !== null) {
+            for (j = lastInlineNode.nodeValue.length - 1; j >= 0 && lastInlineNode.nodeValue[j] === "\n"; j--) {
+            }
+            if (lastInlineNode.nodeValue[++j] === "\n") {
+              lastInlineNode.nodeValue = lastInlineNode.nodeValue.substring(0, j);
+            }
+          }
+        }
+        inlineNodeIndices.length = 0;
+      } else {
+        inlineNodeIndices.push(i);
+      }
+      i++;
+    }
+    if (inlineNodeIndices.length > 0) {
+      const firstInlineNode = msg.childNodes[inlineNodeIndices[0]];
+      let j;
+      if (firstInlineNode.nodeValue !== null) {
+        for (j = 0; j < firstInlineNode.nodeValue.length && firstInlineNode.nodeValue[j] === "\n"; j++) {
+        }
+        if (firstInlineNode.nodeValue[j - 1] === "\n") {
+          firstInlineNode.nodeValue = firstInlineNode.nodeValue.substring(j);
+        }
+      }
+    }
+  };
+  var makeFit = async (span) => {
+    const baseSpans = span.querySelectorAll("span.base");
+    let collectiveSpanWidth = 0;
+    for (let baseSpan of baseSpans) {
+      collectiveSpanWidth += baseSpan.getBoundingClientRect().width;
+    }
+    let partialSumOfSpanWidths = collectiveSpanWidth;
+    if (baseSpans.length > 0) {
+      let oversizedBaseFound = false;
+      for (const baseSpan of baseSpans) {
+        if (baseSpan.getBoundingClientRect().width > span.parentNode.getBoundingClientRect().width) {
+          oversizedBaseFound = true;
+          break;
+        }
+      }
+      const storage = globalThis.browser?.storage.sync || globalThis.chrome?.storage.sync;
+      let storedItems = null;
+      if (storage !== void 0 && storage !== null) {
+        try {
+          storedItems = await storage.get({
+            longFormulaFormat: "Add scroll bar"
+          });
+        } catch (error) {
+          console.error("Caught " + error);
+        }
+      }
+      if (collectiveSpanWidth > span.parentNode.getBoundingClientRect().width) {
+        if (storedItems !== null && storedItems.longFormulaFormat === "line-breaks" && !oversizedBaseFound) {
+          let i = baseSpans.length - 1;
+          let j = 0;
+          const insertLineBreak = () => {
+            if (collectiveSpanWidth > span.parentNode.getBoundingClientRect().width) {
+              if (i > j) {
+                if (partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width <= span.parentNode.getBoundingClientRect().width - 10 || i - j === 1) {
+                  const spacer = document.createElement("div");
+                  spacer.style.margin = "10px 0px";
+                  baseSpans[0].parentNode.insertBefore(spacer, baseSpans[i]);
+                  if (collectiveSpanWidth - (partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width) > span.parentNode.getBoundingClientRect().width - 10) {
+                    partialSumOfSpanWidths = collectiveSpanWidth - (partialSumOfSpanWidths - baseSpans[i].getBoundingClientRect().width);
+                    collectiveSpanWidth = partialSumOfSpanWidths;
+                    j = i;
+                    i = baseSpans.length - 1;
+                    insertLineBreak();
+                  }
+                } else {
+                  partialSumOfSpanWidths -= baseSpans[i--].getBoundingClientRect().width;
+                  insertLineBreak();
+                }
+              }
+            }
+          };
+          insertLineBreak();
+        } else {
+          span.classList.add("katex-scrollable");
+          if (span.getAttribute("class") === "katex katex-scrollable") {
+            span.style.display = "inline-block";
+          }
+          span.style.width = `${span.parentNode.getBoundingClientRect().width}px`;
+          span.style.overflowX = "scroll";
+          span.style.overflowY = "hidden";
+          span.style.scrollbarWidth = "thin";
+          span.style.scrollbarColor = scrollbarColor;
+        }
+      }
+    }
+  };
+  var undoMakeFit = (span) => {
+    span.querySelectorAll("div").forEach((div) => {
+      if (div.style.margin === "10px 0px" && div.attributes.length === 1) {
+        div.remove();
+      }
+    });
+    span.classList.remove("katex-scrollable");
+    span.removeAttribute("style");
+  };
+
   // parse-prep.js
   var wrapTextNodes = (root, msgParts) => {
     for (const node of root.childNodes) {
       if (node.nodeName !== "CODE") {
-        if (node.constructor.name === "Text") {
+        const texBounds = getTexBounds(node);
+        if (node.constructor.name === "Text" && texBounds.length > 0) {
           const span = document.createElement("span");
           span.textContent = node.textContent;
           node.parentNode.insertBefore(span, node);
@@ -14598,7 +14630,7 @@
     }
     return false;
   };
-  var getTexBounds = (msg, escapeCharIndices) => {
+  var getTexBounds = (msg, escapeCharIndices = []) => {
     const txt = msg.textContent;
     const bounds = [];
     const delimAt = (i) => {
@@ -14741,11 +14773,39 @@
       removeEscapeChars(msgPart, escapeCharIndices);
     }
   };
+  var findGridChunk = (descendant) => {
+    let ancestor2 = descendant;
+    while (ancestor2 !== null && !isGridChunk(ancestor2)) {
+      ancestor2 = ancestor2.parentNode;
+      if (ancestor2 !== null && ancestor2.constructor.name === "HTMLBodyElement") {
+        return null;
+      }
+    }
+    return ancestor2;
+  };
   var parseParts = (bubble) => {
     const msgParts = [];
-    wrapTextNodes(bubble, msgParts);
+    if (bubble.querySelectorAll(".katex").length === 0) {
+      wrapTextNodes(bubble, msgParts);
+    } else {
+      bubble.querySelectorAll(
+        "span:where(:not(.katex-display) > .katex, .katex-display)"
+      ).forEach((span) => {
+        makeFit(span);
+      });
+    }
     for (const msgPart of msgParts) {
       parse(msgPart);
+    }
+    if (/^\s*$/.test(bubble.textContent)) {
+      console.log(`this bubble is empty:`);
+      console.log(bubble);
+      const gridChunk = findGridChunk(bubble);
+      for (const node of gridChunk.childNodes) {
+        node.remove();
+      }
+      gridChunk.classList.add("empty-bubble-message");
+      gridChunk.innerHTML = emptyBubbleMessage;
     }
   };
 
@@ -14940,7 +15000,7 @@
     }
   };
 
-  // main.js
+  // run.js
   var startUp = () => {
     injectCss();
     const domInfo = new DomInfo();
@@ -14966,5 +15026,7 @@
     };
     waitToHandleChat();
   };
+
+  // main.js
   window.onload = startUp;
 })();

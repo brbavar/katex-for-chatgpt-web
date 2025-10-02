@@ -1,3 +1,12 @@
 :not(.katex-display):has(> span:where(.katex, .katex-display)) {
   display: block;
 }
+
+.empty-bubble-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: gray;
+  margin-bottom: 20px;
+}

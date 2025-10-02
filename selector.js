@@ -5,8 +5,10 @@ const chatContainer = '#main';
 
 const resizeObservee = chatContainer;
 
+// const chatBubble =
+//   'div[data-message-author-role="user"] div.user-message-bubble-color, div[data-message-author-role="assistant"] div.markdown.prose';
 const chatBubble =
-  'div[data-message-author-role="user"] div.user-message-bubble-color, div[data-message-author-role="assistant"] div.markdown.prose';
+  'div[data-message-author-role="user"] div.user-message-bubble-color';
 
 const message = 'div.whitespace-pre-wrap';
 

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>LaTeX for ChatGPT Options</title>
+  </head>
+  <body>
+    <p>
+      Would you like to make long formulas horizontally scrollable (default
+      setting) or split each one up into multiple lines?
+    </p>
+    <select id="long-formula-format">
+      <option value="scroll-bar">Add scroll bar</option>
+      <option value="line-breaks">Insert line breaks</option>
+    </select>
+    <p>
+      Note: No matter which option you choose, scroll bars are added to overly
+      wide formulas that the line break insertion algorithm is not designed to
+      handle.
+    </p>
+
+    <br />
+    <div id="status"></div>
+    <button id="save">Save</button>
+
+    <script src="options.js"></script>
+  </body>
+</html>
