@@ -1,8 +1,7 @@
 import { render } from 'katex';
 import { removeNewlines, makeFit } from './aesthetex.js';
 import { wrapTextNodes } from './parse-prep.js';
-import { extractDescendants } from './dom-cleanup.js';
-import { emptyBubbleMessage, isGridChunk } from './config.js';
+import { extractDescendants, removeIfEmpty } from './dom-cleanup.js';
 
 const isOpeningDelim = (delim) => {
   if (delim.length === 0) {
@@ -209,37 +208,7 @@ const parse = (msgPart) => {
   }
 };
 
-const findGridChunk = (descendant) => {
-  // if (
-  //   descendant.hasAttribute('data-turn-id') &&
-  //   descendant.getAttribute('data-testid').startsWith('conversation-turn') &&
-  //   isOfTheClasses(descendant, ['text-token-text-primary'])
-  // ) {
-  //   return descendant;
-  // }
-
-  // let ancestor = descendant.parentNode;
-  let ancestor = descendant;
-
-  while (ancestor !== null && !isGridChunk(ancestor)) {
-    ancestor = ancestor.parentNode;
-
-    if (ancestor !== null && ancestor.constructor.name === 'HTMLBodyElement') {
-      return null;
-    }
-  }
-
-  return ancestor;
-};
-
 const parseParts = (bubble) => {
-  // console.log(`bubble:`);
-  // console.log(bubble);
-  // console.log(
-  //   `bubble.querySelectorAll('.katex').length === 0 has a truth value of ${
-  //     bubble.querySelectorAll('.katex').length === 0
-  //   }`
-  // );
   const msgParts = [];
   if (bubble.querySelectorAll('.katex').length === 0) {
     wrapTextNodes(bubble, msgParts);
@@ -253,34 +222,9 @@ const parseParts = (bubble) => {
       });
   }
   for (const msgPart of msgParts) {
-    // console.log(`msgPart:`);
-    // console.log(msgPart);
     parse(msgPart);
   }
-  // console.log(`bubble.textContent = ${bubble.textContent}`);
-  // console.log(
-  //   `/^\s*$/.test(
-  //     bubble.textContent
-  //   ) has a truth value of ${/^\s*$/.test(bubble.textContent)}`
-  // );
-  // for (const char of bubble.textContent) {
-  //   console.log(`char === '' has truth value ${char === ''}`);
-  //   console.log(`char === '' has truth value ${char === '\n'}`);
-  // }
-  // if (bubble.textContent === '') {
-  if (/^\s*$/.test(bubble.textContent)) {
-    console.log(`this bubble is empty:`);
-    console.log(bubble);
-    // findGridChunk(bubble).style.display = 'none';
-    const gridChunk = findGridChunk(bubble);
-    for (const node of gridChunk.childNodes) {
-      node.remove();
-    }
-    // gridChunk.style =
-    //   'display: flex; justify-content: center; align-items: center; text-align: center; color: gray; margin-bottom: 20px;';
-    gridChunk.classList.add('empty-bubble-message');
-    gridChunk.innerHTML = emptyBubbleMessage;
-  }
+  removeIfEmpty(bubble);
 };
 
-export { parseParts, getTexBounds, findGridChunk };
+export { parseParts, getTexBounds };

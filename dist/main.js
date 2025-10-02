@@ -14430,7 +14430,7 @@
   var scrollbarColor = "rgba(135, 135, 135, 0.2) transparent";
   var emptyBubbleMessage = '<div style="max-width: 430px;">LaTeX for ChatGPT failed to render your LaTeX, so your message<br>had no visible content. ChatGPT read what you typed, though.<br>Try again if you want to see your message yourself.<br>(Check console for any parsing errors.)</div>';
   var isGridChunk = (el) => {
-    return ancestor.hasAttribute("data-turn-id") && ancestor.getAttribute("data-testid").startsWith("conversation-turn") && isOfTheClasses(ancestor, ["text-token-text-primary"]);
+    return el.hasAttribute("data-turn-id") && el.getAttribute("data-testid").startsWith("conversation-turn") && isOfTheClasses(el, ["text-token-text-primary"]);
   };
 
   // manifest.json
@@ -14609,6 +14609,26 @@
     }
     span.remove();
   };
+  var findGridChunk = (descendant) => {
+    let ancestor = descendant;
+    while (ancestor !== null && !isGridChunk(ancestor)) {
+      ancestor = ancestor.parentNode;
+      if (ancestor !== null && ancestor.constructor.name === "HTMLBodyElement") {
+        return null;
+      }
+    }
+    return ancestor;
+  };
+  var removeIfEmpty = (bubble) => {
+    if (/^\s*$/.test(bubble.textContent)) {
+      const gridChunk = findGridChunk(bubble);
+      for (const node of gridChunk.childNodes) {
+        node.remove();
+      }
+      gridChunk.classList.add("empty-bubble-message");
+      gridChunk.innerHTML = emptyBubbleMessage;
+    }
+  };
 
   // parse.js
   var isOpeningDelim = (delim) => {
@@ -14773,16 +14793,6 @@
       removeEscapeChars(msgPart, escapeCharIndices);
     }
   };
-  var findGridChunk = (descendant) => {
-    let ancestor2 = descendant;
-    while (ancestor2 !== null && !isGridChunk(ancestor2)) {
-      ancestor2 = ancestor2.parentNode;
-      if (ancestor2 !== null && ancestor2.constructor.name === "HTMLBodyElement") {
-        return null;
-      }
-    }
-    return ancestor2;
-  };
   var parseParts = (bubble) => {
     const msgParts = [];
     if (bubble.querySelectorAll(".katex").length === 0) {
@@ -14797,16 +14807,7 @@
     for (const msgPart of msgParts) {
       parse(msgPart);
     }
-    if (/^\s*$/.test(bubble.textContent)) {
-      console.log(`this bubble is empty:`);
-      console.log(bubble);
-      const gridChunk = findGridChunk(bubble);
-      for (const node of gridChunk.childNodes) {
-        node.remove();
-      }
-      gridChunk.classList.add("empty-bubble-message");
-      gridChunk.innerHTML = emptyBubbleMessage;
-    }
+    removeIfEmpty(bubble);
   };
 
   // DomInfoCore.js

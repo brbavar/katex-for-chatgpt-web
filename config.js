@@ -7,9 +7,9 @@ const emptyBubbleMessage =
 
 const isGridChunk = (el) => {
   return (
-    ancestor.hasAttribute('data-turn-id') &&
-    ancestor.getAttribute('data-testid').startsWith('conversation-turn') &&
-    isOfTheClasses(ancestor, ['text-token-text-primary'])
+    el.hasAttribute('data-turn-id') &&
+    el.getAttribute('data-testid').startsWith('conversation-turn') &&
+    isOfTheClasses(el, ['text-token-text-primary'])
   );
 };
 
